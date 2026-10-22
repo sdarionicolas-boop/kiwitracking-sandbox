@@ -269,3 +269,27 @@ def test_cambio1_con_escalar_std_las_plantas_bajo_malla_siguen_siendo_menos_esta
 
     assert bajo == pytest.approx(9.32, abs=0.01)
     assert fuera == pytest.approx(14.46, abs=0.01)
+
+
+# --- T29 (Cambio 2): borde estricto en p33 sobre el lote de referencia --------------------
+
+
+@pytest.mark.parametrize("escalar_std", [False, True])
+@pytest.mark.parametrize("estado_frio", ["Deficiente", "Adecuado", "Óptimo"])
+def test_cambio2_en_el_lote_real_toda_mantener_es_alto_potencial_y_toda_intervenir_es_limitante(entrada, estado_frio, escalar_std):
+    tabla = _analizar(entrada, estado_frio, escalar_std=escalar_std).tabla
+
+    mantener = tabla.loc[tabla["recomendacion"] == "Mantener", "ambiente"]
+    intervenir = tabla.loc[tabla["recomendacion"] == "Intervenir", "ambiente"]
+    assert (mantener == "Alto Potencial").all()
+    assert (intervenir == "Limitante").all()
+
+
+def test_cambio2_ninguna_planta_del_lote_cae_exactamente_en_p33_ni_en_p66_por_eso_no_cambia_el_resultado_publicado(sin_ajuste_de_frio):
+    # El borde estricto solo importa con empates exactos; el lote de referencia no los tiene.
+    kvpi = sin_ajuste_de_frio.tabla["KVPI_corregido"]
+    resumen = sin_ajuste_de_frio.resumen
+
+    assert not np.isclose(kvpi, resumen.p33, rtol=0, atol=1e-12).any()
+    assert not np.isclose(kvpi, resumen.p66, rtol=0, atol=1e-12).any()
+    assert sin_ajuste_de_frio.tabla["recomendacion"].value_counts().to_dict()["Intervenir"] == 19

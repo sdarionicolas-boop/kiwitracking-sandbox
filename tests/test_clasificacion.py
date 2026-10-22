@@ -1,5 +1,6 @@
 import math
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -260,15 +261,53 @@ def test_rf24_potencial_justo_en_p66_es_mantener():
     assert tabla["recomendacion"].tolist() == ["Mantener"]
 
 
-def test_rf24_potencial_justo_en_p33_es_intervenir_aunque_su_ambiente_sea_transicional():
-    # Asimetría heredada de la metodología (duda abierta): Limitante es "< p33", Intervenir es "<= p33".
+def test_rf24_potencial_justo_en_p33_con_estabilidad_alta_es_observar_y_su_ambiente_es_transicional():
+    # Cambio 2: el borde de Intervenir es estricto (< p33), igual que el de Limitante.
     tabla = _tabla_recomendacion([(0.50, 25.0)])
 
     recomendacion = asignar_recomendacion(tabla, UMBRALES)["recomendacion"].tolist()
     ambiente = asignar_ambiente(tabla, UMBRALES)["ambiente"].tolist()
 
-    assert recomendacion == ["Intervenir"]
+    assert recomendacion == ["Observar"]
     assert ambiente == ["Transicional"]
+
+
+def test_rf24_apenas_por_debajo_de_p33_con_estabilidad_alta_es_intervenir():
+    tabla = _tabla_recomendacion([(0.4999, 25.0)])
+
+    assert asignar_recomendacion(tabla, UMBRALES)["recomendacion"].tolist() == ["Intervenir"]
+    assert asignar_ambiente(tabla, UMBRALES)["ambiente"].tolist() == ["Limitante"]
+
+
+def test_rf24_los_dos_bordes_exactos_juntos_p66_es_mantener_y_p33_no_es_intervenir():
+    tabla = _tabla_recomendacion([(0.60, 25.0), (0.50, 25.0)])
+
+    assert asignar_recomendacion(tabla, UMBRALES)["recomendacion"].tolist() == ["Mantener", "Observar"]
+
+
+def _cumple_el_invariante(tabla, umbrales):
+    resultado = asignar_recomendacion(asignar_ambiente(tabla, umbrales), umbrales)
+    mantener_fuera_de_alto = (resultado["recomendacion"] == "Mantener") & (resultado["ambiente"] != "Alto Potencial")
+    intervenir_fuera_de_limitante = (resultado["recomendacion"] == "Intervenir") & (resultado["ambiente"] != "Limitante")
+    return not mantener_fuera_de_alto.any() and not intervenir_fuera_de_limitante.any()
+
+
+def test_rf24_invariante_con_valores_exactamente_en_los_umbrales():
+    tabla = _tabla_recomendacion([(0.50, 25.0), (0.60, 25.0), (0.4999, 25.0), (0.6001, 25.0), (0.55, 25.0)])
+
+    assert _cumple_el_invariante(tabla, UMBRALES)
+
+
+@pytest.mark.parametrize("semilla", range(40))
+def test_rf24_invariante_mantener_en_alto_potencial_e_intervenir_en_limitante_con_muchos_empates(semilla):
+    # Valores redondeados a 1 decimal: hay muchos empates, incluso con los percentiles calculados.
+    generador = np.random.default_rng(semilla)
+    kvpi = generador.integers(3, 8, size=30) / 10
+    estabilidad = generador.uniform(5, 30, size=30)
+    tabla = pd.DataFrame({"id": range(30), "KVPI_corregido": kvpi, "estabilidad": estabilidad})
+    umbrales = calcular_umbrales(tabla)
+
+    assert _cumple_el_invariante(tabla, umbrales)
 
 
 def test_rf21_planta_sin_estabilidad_es_observar_aunque_su_potencial_sea_extremo():

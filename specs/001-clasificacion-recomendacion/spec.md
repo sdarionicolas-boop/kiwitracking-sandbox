@@ -48,7 +48,7 @@ Tabla por planta con: `id`, `KVPI_mean`, `KVPI_std`, `bajo_malla` (0/1). Opciona
 - **RF-21.** SI `KVPI_std` es 0 para una planta, ENTONCES `estabilidad` DEBE quedar vacía, la recomendación DEBE ser "Observar" y DEBE registrarse una advertencia.
 - **RF-22.** El sistema DEBE calcular p33 y p66 de `KVPI_corregido` y p75 de `estabilidad`, con interpolación lineal, sobre las plantas válidas del lote.
 - **RF-23.** El sistema DEBE asignar el ambiente: "Alto Potencial" si `KVPI_corregido` ≥ p66; "Limitante" si < p33; "Transicional" en el resto.
-- **RF-24.** El sistema DEBE asignar la recomendación: "Mantener" si `KVPI_corregido` ≥ p66 y `estabilidad` ≥ p75; "Intervenir" si `KVPI_corregido` ≤ p33 y `estabilidad` ≥ p75; "Observar" en el resto.
+- **RF-24.** El sistema DEBE asignar la recomendación: "Mantener" si `KVPI_corregido` ≥ p66 y `estabilidad` ≥ p75; "Intervenir" si `KVPI_corregido` < p33 y `estabilidad` ≥ p75; "Observar" en el resto. Por construcción, toda planta "Mantener" es "Alto Potencial" y toda planta "Intervenir" es "Limitante".
 - **RF-25.** CUANDO `estado_frio_ultima_campana` sea "Deficiente", el sistema DEBE reclasificar "Mantener" a "Observar". SI no se informa, NO DEBE aplicar ajuste y DEBE registrar una advertencia.
 - **RF-27.** CUANDO `escalar_std` sea verdadero, el sistema DEBE dividir el `KVPI_corregido` por el `KVPI_std` multiplicado por el mismo FC con que se corrigió esa planta (1 para las plantas que no se corrigieron), de modo que `estabilidad` equivalga a `KVPI_mean / KVPI_std` en las plantas corregidas y no cambie para las demás. SI no se aplicó la corrección, `escalar_std` NO DEBE tener efecto.
 
@@ -65,7 +65,7 @@ Tabla por planta con: `id`, `KVPI_mean`, `KVPI_std`, `bajo_malla` (0/1). Opciona
 - Lote sin malla (todas con `bajo_malla = 0`) → RF-10.
 - `bajo_malla` con valores distintos de 0 y 1 → error (RF-1, valores no válidos).
 - Plantas duplicadas por `id` → [NECESITA ACLARACIÓN].
-- Empates exactos en un umbral → rige el signo (≥ o ≤) escrito en RF-23 y RF-24.
+- Empates exactos en un umbral → rige el signo escrito en RF-23 y RF-24: en p66 la planta es "Alto Potencial" (y "Mantener" si es estable); en p33 es "Transicional" (y nunca "Intervenir").
 
 ## Fuera de alcance
 - Descarga de Sentinel-2 y cálculo de KVPI (spec 003).
@@ -86,7 +86,6 @@ Tabla por planta con: `id`, `KVPI_mean`, `KVPI_std`, `bajo_malla` (0/1). Opciona
 
 ## Dudas abiertas
 - **[NECESITA ACLARACIÓN]** Decidir si, en una versión futura, `escalar_std` pasa a ser verdadero por defecto. Medido sobre el lote de referencia: con `escalar_std` verdadero cambian 5 de 159 recomendaciones (2 plantas bajo malla dejan "Intervenir"; 2 fuera de malla pasan a "Intervenir" y 1 a "Mantener"), sin cambios en ambientes. Por defecto se mantiene el comportamiento publicado (v1.1).
-- **[NECESITA ACLARACIÓN]** La metodología usa "< p33" para Limitante y "≤ p33" para Intervenir. Con datos continuos no hay diferencia práctica; decidir si unificar.
 - **[NECESITA ACLARACIÓN]** La prueba t de Student (varianzas iguales) frente a Welch; la metodología dice Student, pero no hay un p-valor publicado para comparar.
 - **[NECESITA ACLARACIÓN]** Tratamiento de `id` duplicados.
 - **[NECESITA ACLARACIÓN]** El FC figura como 1,226 / 1,227 en la documentación y da 1,2262 con los datos.
@@ -95,3 +94,4 @@ Tabla por planta con: `id`, `KVPI_mean`, `KVPI_std`, `bajo_malla` (0/1). Opciona
 
 ## Historial de cambios
 - **Cambio 1 (21/10/2026).** La estabilidad de las plantas bajo malla usaba el `KVPI_std` sin escalar con el FC, lo que la inflaba un 22,6 %. Se agrega el parámetro `escalar_std` (falso por defecto, para reproducir v1.1) y el requisito RF-27. RF-20 y RF-26 se ajustan.
+- **Cambio 2 (21/10/2026).** La metodología usaba "< p33" para Limitante y "≤ p33" para Intervenir: una planta justo en p33 era "Transicional" e "Intervenir" a la vez. Se unifica con el borde estricto (RF-24) y se agrega el invariante Mantener ⊂ Alto Potencial e Intervenir ⊂ Limitante. Sin efecto en el lote de referencia (ninguna planta cae exactamente en p33).

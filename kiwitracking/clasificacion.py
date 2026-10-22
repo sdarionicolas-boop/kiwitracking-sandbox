@@ -73,6 +73,9 @@ def asignar_ambiente(tabla: pd.DataFrame, umbrales: Umbrales) -> pd.DataFrame:
 def asignar_recomendacion(tabla: pd.DataFrame, umbrales: Umbrales) -> pd.DataFrame:
     """Agrega `recomendacion` (RF-24): Mantener, Intervenir u Observar.
 
+    Los bordes son los de `asignar_ambiente`: Mantener desde p66 e Intervenir por debajo de p33, así
+    que toda "Mantener" es "Alto Potencial" y toda "Intervenir" es "Limitante".
+
     Sin estabilidad (vacía) o sin p75 de estabilidad, ninguna planta califica: Observar (RF-21).
     """
     resultado = tabla.copy()
@@ -83,7 +86,7 @@ def asignar_recomendacion(tabla: pd.DataFrame, umbrales: Umbrales) -> pd.DataFra
         estable = resultado["estabilidad"] >= umbrales.p75_estabilidad  # un vacío da False
 
     resultado["recomendacion"] = np.select(
-        [estable & (kvpi >= umbrales.p66), estable & (kvpi <= umbrales.p33)],
+        [estable & (kvpi >= umbrales.p66), estable & (kvpi < umbrales.p33)],
         ["Mantener", "Intervenir"],
         default="Observar",
     )

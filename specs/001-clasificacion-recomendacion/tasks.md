@@ -142,3 +142,15 @@ Mismas reglas: una tarea a la vez, el test primero y visto fallar. Con el valor 
   - Cubre: criterio 6 de la spec (cada RF con test).
   - Hecho cuando: `validacion.md` pasa a 27 requisitos con su test, la suite completa pasa con `-W error` y el cambio queda commiteado.
 
+## Cambio 2: borde estricto en p33 (RF-24)
+
+Mismas reglas. Con tablas sin empates en p33 (como el lote de referencia) nada de lo ya validado puede cambiar.
+
+- [x] **T28. Intervenir con borde estricto (`< p33`).**
+  - Cubre: RF-24 y el invariante Mantener ⊂ Alto Potencial, Intervenir ⊂ Limitante.
+  - Hecho cuando: una planta justo en p33 con estabilidad alta es "Observar" (y de ambiente "Transicional"); una apenas por debajo es "Intervenir"; el invariante se cumple con valores exactamente en los umbrales y en 40 tablas aleatorias con muchos empates; el test viejo que documentaba la asimetría fue reemplazado.
+
+- [ ] **T29. Golden y validación del Cambio 2.**
+  - Cubre: criterios 2 y 5, y el invariante sobre el lote real.
+  - Hecho cuando: los tests del golden siguen pasando sin tocarse (el lote no tiene empates en p33), el invariante se verifica sobre las 159 plantas con y sin `escalar_std`, `validacion.md` registra el cambio y queda commiteado.
+
