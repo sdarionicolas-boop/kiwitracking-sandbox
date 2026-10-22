@@ -52,11 +52,11 @@ Reglas: una tarea a la vez, en orden. En cada una, primero se escribe el test y 
 
 ## Clasificación
 
-- [ ] **T10. Estabilidad.**
+- [x] **T10. Estabilidad.**
   - Cubre: RF-20, RF-21.
   - Hecho cuando: `estabilidad` = `KVPI_corregido` / `KVPI_std`; con `KVPI_std = 0` queda vacía y sale `STD_CERO`.
 
-- [ ] **T11. Umbrales.**
+- [x] **T11. Umbrales.**
   - Cubre: RF-22.
   - Hecho cuando: sobre una tabla de 11 valores conocidos, p33, p66 y p75 coinciden con `numpy.percentile` calculado a mano en el test; las plantas con `std = 0` no entran al p75 de estabilidad.
 
