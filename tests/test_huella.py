@@ -86,3 +86,20 @@ def test_rf16_no_modifica_la_tabla_de_entrada():
     huella(tabla)
 
     pd.testing.assert_frame_equal(tabla, copia)
+
+
+# --- T34 (Cambio 4): la huella es la de un conjunto de id ---------------------------------
+
+
+def test_rf16_un_id_bajo_malla_repetido_no_cambia_la_huella():
+    sin_repetir = _tabla([1, 2, 3], [0, 1, 1])
+    repetida = pd.concat([sin_repetir, sin_repetir[sin_repetir["bajo_malla"] == 1]], ignore_index=True)
+
+    assert huella(repetida) == huella(sin_repetir)
+
+
+def test_rf16_repetir_muchas_veces_el_mismo_id_tampoco_cambia_la_huella():
+    sin_repetir = _tabla([1, 2], [1, 0])
+    repetida = pd.concat([sin_repetir] * 5, ignore_index=True)
+
+    assert huella(repetida) == huella(sin_repetir)

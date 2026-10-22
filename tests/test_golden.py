@@ -351,3 +351,43 @@ def test_cambio3_la_decision_y_todos_los_resultados_del_lote_son_identicos_con_a
 def test_cambio3_ambas_pruebas_dan_una_diferencia_altamente_significativa(entrada):
     for prueba in ("welch", "student"):
         assert _analizar(entrada, "Deficiente", prueba_t=prueba).resumen.p_valor < 0.001
+
+
+# --- T34 (Cambio 4): filas repetidas del lote de referencia ---------------------------------
+
+
+def test_cambio4_con_10_filas_repetidas_del_lote_el_resultado_es_el_del_lote_original(entrada, sin_ajuste_de_frio):
+    # Antes del cambio: FC 1,22939, 58/111 plantas y 2 recomendaciones distintas, sin ninguna advertencia.
+    repetidas = pd.concat(
+        [entrada, entrada[entrada["bajo_malla"] == 1].sample(5, random_state=1), entrada[entrada["bajo_malla"] == 0].sample(5, random_state=2)],
+        ignore_index=True,
+    )
+    assert len(repetidas) == 169
+
+    resultado = analizar(repetidas, huella_confirmada=huella(entrada), estado_frio_ultima_campana="Adecuado")
+
+    pd.testing.assert_frame_equal(resultado.tabla, sin_ajuste_de_frio.tabla)
+    assert resultado.resumen == sin_ajuste_de_frio.resumen
+    assert resultado.resumen.fc == pytest.approx(1.22617, abs=1e-5)
+    assert (resultado.resumen.n_bajo_malla, resultado.resumen.n_fuera_malla) == (53, 106)
+    assert [a.codigo for a in resultado.advertencias] == ["ID_DUPLICADO"]
+    assert "10" in resultado.advertencias[0].mensaje
+
+
+# --- T35 (Cambio 4): de dónde salen el 1,226 y el 1,227 de la documentación -------------------
+
+
+def test_cambio4_el_fc_es_1_2262_y_las_cifras_1_226_y_1_227_de_la_documentacion_son_redondeos(con_frio_deficiente, golden):
+    fuera, bajo = _grupos(golden)
+    exacto = fuera.mean() / bajo.mean()
+
+    # Lo que calcula el software es el cociente exacto de las medias.
+    assert con_frio_deficiente.resumen.fc == pytest.approx(exacto, abs=1e-12)
+    assert round(exacto, 4) == 1.2262
+    # 1,226 = ese FC exacto redondeado a 3 decimales (el "factor aplicado" de metadata_ejecucion.txt).
+    assert round(exacto, 3) == 1.226
+    # 1,227 = dividir las medias ya redondeadas a 3 decimales: 0,541 / 0,441.
+    assert (round(fuera.mean(), 3), round(bajo.mean(), 3)) == (0.541, 0.441)
+    assert round(0.541 / 0.441, 3) == 1.227
+    # Por eso 1,227 se corre unas milésimas del valor calculado: no es el FC del software.
+    assert abs(con_frio_deficiente.resumen.fc - 1.227) > 5e-4

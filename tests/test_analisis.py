@@ -373,3 +373,68 @@ def test_rf6_prueba_t_no_cambia_el_fc_ni_los_tamanos_de_grupo():
     student = _analizar_ok(tabla, prueba_t="student").resumen
 
     assert (welch.fc, welch.n_bajo_malla, welch.n_fuera_malla) == (student.fc, student.n_bajo_malla, student.n_fuera_malla)
+
+
+# --- T34 (Cambio 4): id duplicados en analizar() -------------------------------------------
+
+
+def _con_duplicados(tabla, posiciones):
+    return pd.concat([tabla, tabla.iloc[posiciones]], ignore_index=True)
+
+
+def test_rf29_con_filas_repetidas_el_resultado_es_el_mismo_que_sin_ellas():
+    tabla = _tabla_12()
+    repetida = _con_duplicados(tabla, [0, 3, 9, 10])
+
+    limpio = _analizar_ok(tabla)
+    con_repetidas = analizar(
+        repetida, huella_confirmada=huella(tabla), estado_frio_ultima_campana="Adecuado"
+    )
+
+    pd.testing.assert_frame_equal(con_repetidas.tabla, limpio.tabla)
+    assert con_repetidas.resumen == limpio.resumen
+
+
+def test_rf29_se_avisa_con_id_duplicado_y_la_cantidad():
+    repetida = _con_duplicados(_tabla_12(), [0, 3, 9, 10])
+
+    resultado = analizar(repetida, huella_confirmada=huella(repetida), estado_frio_ultima_campana="Adecuado")
+
+    assert [a.codigo for a in resultado.advertencias] == ["ID_DUPLICADO"]
+    assert "4" in resultado.advertencias[0].mensaje
+
+
+def test_rf16_la_huella_del_mapa_con_filas_repetidas_confirma_el_analisis_con_o_sin_ellas():
+    tabla = _tabla_12()
+    repetida = _con_duplicados(tabla, [8, 9])  # dos plantas bajo malla repetidas
+
+    for entrada in (tabla, repetida):
+        resultado = analizar(entrada, huella_confirmada=huella(repetida), estado_frio_ultima_campana="Adecuado")
+        assert resultado.resumen.correccion_aplicada is True
+
+
+def test_rf29_id_duplicado_va_antes_que_plantas_excluidas_en_el_orden_de_las_advertencias():
+    tabla = _tabla_12()
+    tabla.loc[0, "KVPI_mean"] = float("nan")
+    repetida = _con_duplicados(tabla, [3])
+
+    resultado = analizar(repetida, huella_confirmada=huella(repetida), estado_frio_ultima_campana="Adecuado")
+
+    assert [a.codigo for a in resultado.advertencias] == ["ID_DUPLICADO", "PLANTAS_EXCLUIDAS"]
+
+
+def test_rf30_el_mismo_id_con_valores_distintos_da_error_desde_analizar():
+    tabla = _tabla_12()
+    conflicto = pd.concat([tabla, tabla.iloc[[3]].assign(KVPI_mean=0.99)], ignore_index=True)
+
+    with pytest.raises(ErrorDeEntrada, match="id repetidos"):
+        analizar(conflicto, huella_confirmada=huella(conflicto), estado_frio_ultima_campana="Adecuado")
+
+
+def test_rf29_analizar_no_modifica_la_tabla_con_repetidas():
+    repetida = _con_duplicados(_tabla_12(), [0, 3])
+    copia = repetida.copy()
+
+    analizar(repetida, huella_confirmada=huella(repetida))
+
+    pd.testing.assert_frame_equal(repetida, copia)

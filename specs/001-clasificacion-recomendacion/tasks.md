@@ -170,3 +170,19 @@ Mismas reglas. Con `prueba_t="student"` el resultado publicado (v1.1) tiene que 
   - Cubre: criterios 2, 3 y 5, y la reproducción de v1.1.
   - Hecho cuando: con `"student"` el p-valor del lote es 1,0e-26 (como en v1.1) y con Welch 5,9e-35; la decisión de corregir y todos los resultados del golden son idénticos con ambas; `validacion.md` registra el cambio (28 requisitos) y queda commiteado.
 
+## Cambio 4: `id` duplicados (RF-16, RF-29, RF-30)
+
+Mismas reglas. Un lote sin ids repetidos (como el de referencia) no puede cambiar en nada.
+
+- [x] **T33. `descartar_duplicados`.**
+  - Cubre: RF-29, RF-30.
+  - Hecho cuando: las filas completamente idénticas se reducen a la primera, conservando el orden, con la advertencia `ID_DUPLICADO` y la cantidad descartada; el mismo `id` con algún valor distinto (KVPI, desvío, `bajo_malla` o una columna extra) da `ErrorDeEntrada` que nombra hasta 10 `id` y cuántos más hay; un conflicto manda sobre los duplicados exactos; la tabla de entrada no se modifica.
+
+- [x] **T34. `analizar()`, el mapa y la huella.**
+  - Cubre: RF-29, RF-30, RF-16.
+  - Hecho cuando: `analizar()` y `preparar_mapa` descartan duplicados exactos y fallan ante conflictos; `ID_DUPLICADO` sale antes de `PLANTAS_EXCLUIDAS` en el orden de advertencias; la huella es la misma con y sin filas repetidas; con 10 filas duplicadas del lote de referencia el resultado es idéntico al del lote original (salvo la advertencia).
+
+- [x] **T35. Golden y validación del Cambio 4.**
+  - Cubre: criterios 2 a 5 (sin cambios) y la reproducción con duplicados.
+  - Hecho cuando: los tests del golden pasan sin tocarse; el caso de las 10 filas repetidas da FC 1,22617 (no 1,22939); un test documenta de dónde salen 1,226 y 1,227; `validacion.md` registra el cambio (30 requisitos) y queda commiteado.
+

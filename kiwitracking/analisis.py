@@ -12,7 +12,7 @@ from kiwitracking.clasificacion import (
 from kiwitracking.correccion import resolver_correccion
 from kiwitracking.huella import huella
 from kiwitracking.resultado import ErrorDeEntrada, Resultado, Resumen
-from kiwitracking.validacion import excluir_sin_kvpi, validar_parametros, validar_tabla
+from kiwitracking.validacion import descartar_duplicados, excluir_sin_kvpi, validar_parametros, validar_tabla
 
 
 def analizar(
@@ -35,7 +35,9 @@ def analizar(
     validar_tabla(tabla)
     huella_entrada = huella(tabla)
 
-    plantas, advertencias = excluir_sin_kvpi(tabla)
+    plantas, advertencias = descartar_duplicados(tabla)
+    plantas, avisos = excluir_sin_kvpi(plantas)
+    advertencias += avisos
     if plantas.empty:
         raise ErrorDeEntrada("Ninguna planta tiene KVPI_mean válido: no hay nada que analizar.")
 

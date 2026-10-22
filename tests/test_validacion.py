@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 from kiwitracking.resultado import ErrorDeEntrada
-from kiwitracking.validacion import excluir_sin_kvpi, validar_parametros, validar_tabla
+from kiwitracking.validacion import descartar_duplicados, excluir_sin_kvpi, validar_parametros, validar_tabla
 
 
 def _tabla_valida():
@@ -179,3 +179,115 @@ def test_rf2_la_tabla_devuelta_es_independiente_de_la_entrada():
     tabla.loc[0, "KVPI_mean"] = 99.0
 
     assert entrada.loc[0, "KVPI_mean"] == 0.50
+
+
+# --- T33 (Cambio 4): id duplicados -----------------------------------------------------
+
+
+def _tabla_con_id(filas):
+    """`filas`: lista de (id, KVPI_mean, KVPI_std, bajo_malla)."""
+    return pd.DataFrame(filas, columns=["id", "KVPI_mean", "KVPI_std", "bajo_malla"])
+
+
+BASE = [(1, 0.50, 0.03, 0), (2, 0.55, 0.04, 0), (3, 0.45, 0.05, 1)]
+
+
+def test_rf29_sin_ids_repetidos_la_tabla_sale_igual_y_sin_advertencias():
+    entrada = _tabla_con_id(BASE)
+
+    tabla, advertencias = descartar_duplicados(entrada)
+
+    pd.testing.assert_frame_equal(tabla, entrada)
+    assert advertencias == []
+
+
+def test_rf29_una_fila_repetida_exacta_se_conserva_una_sola_vez():
+    tabla, _ = descartar_duplicados(_tabla_con_id(BASE + [(2, 0.55, 0.04, 0)]))
+
+    assert tabla["id"].tolist() == [1, 2, 3]
+
+
+def test_rf29_se_avisa_con_codigo_estable_y_la_cantidad_descartada():
+    _, advertencias = descartar_duplicados(_tabla_con_id(BASE + [(2, 0.55, 0.04, 0), (3, 0.45, 0.05, 1)]))
+
+    assert [a.codigo for a in advertencias] == ["ID_DUPLICADO"]
+    assert "2" in advertencias[0].mensaje
+
+
+def test_rf29_tres_copias_de_la_misma_fila_cuentan_dos_descartadas():
+    _, advertencias = descartar_duplicados(_tabla_con_id(BASE + [(1, 0.50, 0.03, 0)] * 2))
+
+    assert "2" in advertencias[0].mensaje
+
+
+def test_rf29_se_conserva_la_primera_aparicion_y_el_orden_original():
+    entrada = _tabla_con_id([(3, 0.45, 0.05, 1), (1, 0.50, 0.03, 0), (3, 0.45, 0.05, 1), (2, 0.55, 0.04, 0)])
+
+    tabla, _ = descartar_duplicados(entrada)
+
+    assert tabla["id"].tolist() == [3, 1, 2]
+
+
+def test_rf29_dos_filas_con_vacios_en_las_mismas_columnas_cuentan_como_identicas():
+    nan = float("nan")
+
+    tabla, advertencias = descartar_duplicados(_tabla_con_id(BASE + [(4, nan, 0.04, 0), (4, nan, 0.04, 0)]))
+
+    assert tabla["id"].tolist() == [1, 2, 3, 4]
+    assert advertencias[0].codigo == "ID_DUPLICADO"
+
+
+def test_rf29_una_columna_extra_tambien_cuenta_para_decidir_si_son_identicas():
+    entrada = _tabla_con_id(BASE + [(2, 0.55, 0.04, 0)])
+    entrada["X"] = [-57.89, -57.88, -57.87, -57.88]  # la fila repetida tiene las mismas coordenadas
+
+    tabla, _ = descartar_duplicados(entrada)
+
+    assert len(tabla) == 3
+
+
+def test_rf30_el_mismo_id_con_distinto_kvpi_da_error_que_nombra_el_id():
+    with pytest.raises(ErrorDeEntrada) as error:
+        descartar_duplicados(_tabla_con_id(BASE + [(2, 0.60, 0.04, 0)]))
+
+    assert "2" in str(error.value) and "id" in str(error.value)
+
+
+def test_rf30_el_mismo_id_con_distinto_bajo_malla_da_error():
+    with pytest.raises(ErrorDeEntrada):
+        descartar_duplicados(_tabla_con_id(BASE + [(1, 0.50, 0.03, 1)]))
+
+
+def test_rf30_el_mismo_id_con_distintas_coordenadas_da_error():
+    entrada = _tabla_con_id(BASE + [(2, 0.55, 0.04, 0)])
+    entrada["X"] = [-57.89, -57.88, -57.87, -57.00]  # misma planta en otro lugar
+
+    with pytest.raises(ErrorDeEntrada):
+        descartar_duplicados(entrada)
+
+
+def test_rf30_si_hay_duplicados_exactos_y_tambien_un_conflicto_manda_el_error():
+    entrada = _tabla_con_id(BASE + [(1, 0.50, 0.03, 0), (2, 0.60, 0.04, 0)])
+
+    with pytest.raises(ErrorDeEntrada):
+        descartar_duplicados(entrada)
+
+
+def test_rf30_el_error_nombra_hasta_10_ids_y_dice_cuantos_mas_hay():
+    base = [(i, 0.5, 0.03, 0) for i in range(1, 16)]
+    conflictos = [(i, 0.6, 0.03, 0) for i in range(1, 16)]  # 15 ids con dos valores distintos
+
+    with pytest.raises(ErrorDeEntrada) as error:
+        descartar_duplicados(_tabla_con_id(base + conflictos))
+
+    assert "15" in str(error.value)
+    assert "y 5 más" in str(error.value)
+
+
+def test_rf29_no_modifica_la_tabla_de_entrada():
+    entrada = _tabla_con_id(BASE + [(2, 0.55, 0.04, 0)])
+    copia = entrada.copy()
+
+    descartar_duplicados(entrada)
+
+    pd.testing.assert_frame_equal(entrada, copia)

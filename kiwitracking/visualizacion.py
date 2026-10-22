@@ -1,6 +1,6 @@
 """Capa visual: el mapa de verificación de las plantas bajo malla. El núcleo no la importa."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import folium
@@ -9,7 +9,8 @@ from shapely.geometry import mapping
 from shapely.geometry.base import BaseGeometry
 
 from kiwitracking.huella import huella
-from kiwitracking.resultado import ErrorDeEntrada
+from kiwitracking.resultado import Advertencia, ErrorDeEntrada
+from kiwitracking.validacion import descartar_duplicados
 
 COLOR_BAJO_MALLA = "#f39c12"
 COLOR_FUERA_DE_MALLA = "#27ae60"
@@ -33,6 +34,7 @@ class DatosMapa:
     huella: str
     n_bajo_malla: int
     n_fuera_de_malla: int
+    advertencias: list[Advertencia] = field(default_factory=list)
 
 
 def preparar_mapa(
@@ -50,6 +52,7 @@ def preparar_mapa(
     if faltan:
         raise ErrorDeEntrada(f"Faltan columnas para el mapa: {', '.join(faltan)}.")
 
+    plantas, advertencias = descartar_duplicados(plantas)  # RF-29, RF-30: igual que en el análisis
     x, y = plantas[columna_x], plantas[columna_y]
     sin_coordenadas = int((x.isna() | y.isna()).sum())
     if sin_coordenadas:
@@ -79,6 +82,7 @@ def preparar_mapa(
         huella=huella(plantas),
         n_bajo_malla=n_bajo,
         n_fuera_de_malla=len(plantas) - n_bajo,
+        advertencias=advertencias,
     )
 
 
@@ -117,6 +121,7 @@ def crear_mapa(datos: DatosMapa, fondo_satelital: bool = True) -> folium.Map:
 
 
 def _cuadro_de_verificacion(datos: DatosMapa) -> str:
+    avisos = "".join(f"<small>{a.mensaje}</small><br>" for a in datos.advertencias)
     return (
         '<div style="position:fixed;bottom:20px;left:20px;z-index:9999;background:white;padding:10px 14px;'
         'border:1px solid #888;border-radius:6px;font:13px sans-serif;max-width:320px">'
@@ -124,6 +129,7 @@ def _cuadro_de_verificacion(datos: DatosMapa) -> str:
         f'<span style="color:{COLOR_BAJO_MALLA}">&#9679;</span> {datos.n_bajo_malla} plantas bajo malla<br>'
         f'<span style="color:{COLOR_FUERA_DE_MALLA}">&#9679;</span> {datos.n_fuera_de_malla} plantas fuera de malla<br>'
         f"Huella de confirmación: <code>{datos.huella}</code><br>"
+        f"{avisos}"
         "<small>Si el mapa es correcto, pasá esta huella al análisis.</small>"
         "</div>"
     )

@@ -256,3 +256,43 @@ def test_rf15_generar_mapa_no_modifica_la_tabla_de_entrada(tmp_path):
     generar_mapa(plantas, POLIGONO, tmp_path / "mapa.html")
 
     pd.testing.assert_frame_equal(plantas, copia)
+
+
+# --- T34 (Cambio 4): id duplicados en el mapa de verificación -----------------------------
+
+
+def _plantas_con_repetida():
+    return pd.concat([_plantas(), _plantas().iloc[[0]]], ignore_index=True)  # la planta 10 (bajo malla), dos veces
+
+
+def test_rf29_el_mapa_dibuja_una_sola_vez_la_planta_repetida_y_avisa():
+    datos = preparar_mapa(_plantas_con_repetida(), POLIGONO)
+
+    assert [p.id for p in datos.puntos] == [10, 20, 30, 40]
+    assert (datos.n_bajo_malla, datos.n_fuera_de_malla) == (2, 2)
+    assert [a.codigo for a in datos.advertencias] == ["ID_DUPLICADO"]
+
+
+def test_rf16_la_huella_del_mapa_no_cambia_por_la_fila_repetida():
+    assert preparar_mapa(_plantas_con_repetida(), POLIGONO).huella == huella(_plantas())
+
+
+def test_rf29_sin_repetidas_el_mapa_no_trae_advertencias():
+    assert preparar_mapa(_plantas(), POLIGONO).advertencias == []
+
+
+def test_rf30_un_id_repetido_con_otra_posicion_es_un_error_en_el_mapa():
+    plantas = pd.concat([_plantas(), _plantas().iloc[[0]].assign(X=-57.0)], ignore_index=True)
+
+    with pytest.raises(ErrorDeEntrada, match="id repetidos"):
+        preparar_mapa(plantas, POLIGONO)
+
+
+def test_rf29_el_html_tiene_un_marcador_por_planta_y_dice_que_se_descartaron_filas(tmp_path):
+    ruta = tmp_path / "mapa.html"
+
+    generar_mapa(_plantas_con_repetida(), POLIGONO, ruta)
+
+    html = ruta.read_text(encoding="utf-8")
+    assert html.count("L.circleMarker(") == 4
+    assert "filas repetidas" in html

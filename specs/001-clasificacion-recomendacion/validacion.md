@@ -1,6 +1,6 @@
 # Validación — Spec 001
 
-Fecha de la corrida: 21/10/2026 (incluye los Cambios 1, 2 y 3, secciones 7 a 9). Comando: `.venv\Scripts\python -m pytest -W error` → **359 tests, 359 pasan, 0 avisos**.
+Fecha de la corrida: 21/10/2026 (incluye los Cambios 1 a 4, secciones 7 a 10). Comando: `.venv\Scripts\python -m pytest -W error` → **387 tests, 387 pasan, 0 avisos**.
 
 ## 1. Matriz de requisitos
 
@@ -23,7 +23,7 @@ Un test "cubre" un RF cuando su nombre lleva el número (`test_rfN_...`). Los n�
 | 13 | 2 | OK | test_correccion | "desactivar" nunca corrige |
 | 14 | 11 | OK | test_analisis, test_correccion, test_validacion | Modo inválido: error con los valores permitidos |
 | 15 | 27 | OK | test_visualizacion | Datos del mapa, HTML con un marcador por planta, polígono, fondo opcional |
-| 16 | 13 | OK | test_huella, test_visualizacion | Huella determinista, sin depender del orden, visible en el mapa |
+| 16 | 17 | OK | test_analisis, test_huella, test_visualizacion | Huella determinista: no depende del orden de las filas, de los KVPI ni de ids repetidos; visible en el mapa |
 | 17 | 14 | OK | test_io | Punto en polígono; lectura de GeoJSON |
 | 18 | 8 | OK | test_io | Sistema de coordenadas obligatorio y conversión entre sistemas |
 | 19 | 5 | OK | test_io | Advertencia si el cruce da 0 o todas las plantas |
@@ -36,19 +36,21 @@ Un test "cubre" un RF cuando su nombre lleva el número (`test_rfN_...`). Los n�
 | 26 | 12 | OK | test_analisis, test_resultado | Resultado con tabla, resumen (incluidos `escalar_std` y `prueba_t`) y advertencias en orden |
 | 27 | 15 | OK | test_analisis, test_clasificacion | `escalar_std`: estabilidad = `KVPI_mean` / `KVPI_std` solo donde hubo corrección; sin efecto si no se corrigió |
 | 28 | 10 | OK | test_analisis, test_correccion | `prueba_t` inválida: error con los valores permitidos (welch, student) |
+| 29 | 15 | OK | test_analisis, test_validacion, test_visualizacion | Filas idénticas: se conserva una, aviso `ID_DUPLICADO` con la cantidad (análisis y mapa) |
+| 30 | 7 | OK | test_analisis, test_validacion, test_visualizacion | Mismo `id` con valores distintos: error que nombra hasta 10 `id` y cuántos más |
 
-**Ninguno de los 28 RF queda sin test.** Los más delgados son RF-13 (2 tests) y RF-10 (3 tests); alcanzan para su comportamiento, pero son los primeros candidatos a reforzar. Los 12 tests `test_cambio1_*`, los 7 `test_cambio2_*` y los 5 `test_cambio3_*` de `test_golden` verifican los cambios contra el lote real y no llevan número de RF en el nombre. RF-24 pasa de 9 a 52 tests porque el invariante se prueba en 40 tablas aleatorias con empates.
+**Ninguno de los 30 RF queda sin test.** Los más delgados son RF-13 (2 tests) y RF-10 (3 tests); alcanzan para su comportamiento, pero son los primeros candidatos a reforzar. Los 12 tests `test_cambio1_*`, los 7 `test_cambio2_*`, los 5 `test_cambio3_*` y los 2 `test_cambio4_*` de `test_golden` verifican los cambios contra el lote real y no llevan número de RF en el nombre. RF-24 pasa de 9 a 52 tests porque el invariante se prueba en 40 tablas aleatorias con empates.
 
 ## 2. Criterios de finalización
 
 | # | Criterio | Estado | Evidencia |
 |---|---|---|---|
-| 1 | Todos los tests RF pasan | **Cumplido** | 359/359 |
+| 1 | Todos los tests RF pasan | **Cumplido** | 387/387 |
 | 2 | `KVPI_corregido`, `estabilidad` y umbrales con tolerancia 1e-6; ambiente y recomendación exactos | **Cumplido** | `test_golden`: diferencia máxima 1,1e-16 y 2,3e-13; las 159 plantas coinciden |
 | 3 | FC = 1,2262 ± 1e-3 | **Cumplido** | FC = 1,22617; p = 1,0e-26 |
 | 4 | El cruce con `malla_zona.geojson` da 53 plantas | **Cumplido** | 53, y coincide planta por planta con el notebook |
 | 5 | Sin ajuste de frío: 15 "Mantener" y 19 "Intervenir" | **Cumplido** | `test_golden` |
-| 6 | Cada RF tiene al menos un test | **Cumplido** | Sección 1 (28 RF) |
+| 6 | Cada RF tiene al menos un test | **Cumplido** | Sección 1 (30 RF) |
 | 7 | Demostración manual del flujo y revisión del mapa a mano | **Cumplido** | Flujo ejecutado de punta a punta sobre el lote real (sección 3). Revisión visual del mapa confirmada por la persona responsable el 21/10/2026: los puntos naranjas coinciden con la malla visible en la imagen. |
 
 ## 3. Demostración manual sobre el lote real
@@ -83,14 +85,16 @@ Fueron tomadas para poder avanzar y siguen como dudas abiertas en `spec.md`:
 - La huella se calcula sobre la tabla de entrada completa.
 - Sin ninguna planta con KVPI válido: error.
 - El borde del polígono cuenta como "dentro".
+- "Fila idéntica" (RF-29) es igual en todas las columnas de la tabla, no solo en las obligatorias; los vacíos cuentan como iguales entre sí.
+- Una tabla sin columna `id` sigue dando `KeyError` en lugar de `ErrorDeEntrada` (RF-1 no la lista, aunque la sección Entradas sí). Pendiente de decidir.
 
 ## 6. Dudas abiertas de método (te corresponden)
 
 1. ~~`estabilidad` con el `KVPI_std` sin corregir~~ **Resuelta con el Cambio 1** (sección 7): parámetro `escalar_std`. Queda decidir si pasa a ser el valor por defecto en una versión futura.
 2. ~~`<` frente a `≤` en p33~~ **Resuelta con el Cambio 2** (sección 8).
 3. ~~Prueba t de Student frente a Welch~~ **Resuelta con el Cambio 3** (sección 9): Welch por defecto, Student con `prueba_t="student"`.
-4. `id` duplicados.
-5. FC publicado como 1,226 / 1,227 y calculado 1,2262.
+4. ~~`id` duplicados~~ **Resuelta con el Cambio 4** (sección 10): filas idénticas se descartan con aviso; conflictos son error.
+5. ~~FC publicado como 1,226 / 1,227 y calculado 1,2262~~ **Aclarada** (sección 10): son redondeos del mismo valor.
 
 ## 7. Cambio 1: `escalar_std` (RF-20, RF-26, RF-27)
 
@@ -121,6 +125,15 @@ Ciclo completo de SDD: duda detectada y medida → decisión (opción C: paráme
 - **Aviso de scipy:** con un grupo de valores idénticos scipy emite "Precision loss…". Se verificó a mano que el p-valor es correcto y se silencia solo ese aviso.
 - **Pendiente fuera de este sandbox:** `docs/metodologia.md` (sección 5.1) del repositorio original dice "prueba t de Student" y debe actualizarse.
 
+## 10. Cambio 4: `id` duplicados y aclaración del FC (RF-16, RF-29, RF-30)
+
+- **Problema (duplicados):** el sistema no avisaba y contaba dos veces la planta. Con 10 filas repetidas del lote de referencia, el FC pasaba de 1,22617 a 1,22939, las plantas bajo/fuera de malla de 53/106 a 58/111 y cambiaban 2 recomendaciones.
+- **Decisión (opción B):** filas idénticas se descartan con `ID_DUPLICADO`; el mismo `id` con valores distintos es un error. Vale para el análisis y para el mapa; la huella pasó a ser la de un conjunto de `id`.
+- **Efecto en el lote de referencia:** ninguno (sus `id` son únicos). Con las 10 filas repetidas, el resultado es idéntico al del lote original: misma tabla, mismo resumen, 53/106 y FC 1,22617, más la advertencia.
+- **Sensibilidad:** tres mutaciones (no descartar duplicados, huella como lista, descartar conflictos en vez de dar error) hacen fallar 5, 5 y 7 tests.
+- **FC 1,226 / 1,227:** no era un error del software. El FC exacto es 1,226172; 1,226 es ese valor redondeado a 3 decimales y 1,227 sale de dividir las medias ya redondeadas (0,541 / 0,441). Un test lo documenta. Se cita como 1,2262.
+- **Pendiente fuera de este sandbox:** unificar el FC en el README, `docs/metodologia.md` y `metadata_ejecucion.txt`.
+
 ## Veredicto
 
-**La spec 001 está cumplida, con los Cambios 1, 2 y 3 incorporados.** Los 28 requisitos tienen test, los 359 pasan, el núcleo reproduce el resultado publicado de las 159 plantas y la verificación visual del mapa fue confirmada por una persona. Las limitaciones de la sección 4 y las dudas de las secciones 5 y 6 siguen vigentes.
+**La spec 001 está cumplida, con los Cambios 1 a 4 incorporados.** Los 30 requisitos tienen test, los 387 pasan, el núcleo reproduce el resultado publicado de las 159 plantas y la verificación visual del mapa fue confirmada por una persona. Las limitaciones de la sección 4 y las dudas de las secciones 5 y 6 siguen vigentes.

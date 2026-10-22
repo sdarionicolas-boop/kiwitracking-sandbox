@@ -52,3 +52,31 @@ def excluir_sin_kvpi(tabla: pd.DataFrame) -> tuple[pd.DataFrame, list[Advertenci
 
     mensaje = f"Se excluyeron {cantidad} plantas con KVPI_mean vacío."
     return tabla[validas].copy(), [Advertencia("PLANTAS_EXCLUIDAS", mensaje)]
+
+
+MAX_IDS_EN_EL_ERROR = 10
+
+
+def descartar_duplicados(tabla: pd.DataFrame) -> tuple[pd.DataFrame, list[Advertencia]]:
+    """Filas idénticas: se conserva la primera y se avisa (RF-29). El mismo `id` con valores distintos: error (RF-30).
+
+    "Idéntica" significa igual en todas las columnas de la tabla; los vacíos cuentan como iguales entre sí.
+    """
+    repetidas = tabla[tabla["id"].duplicated(keep=False)]
+    distintas = repetidas.drop_duplicates()
+    en_conflicto = distintas.loc[distintas["id"].duplicated(), "id"].drop_duplicates().tolist()
+    if en_conflicto:
+        nombrados = ", ".join(str(i) for i in en_conflicto[:MAX_IDS_EN_EL_ERROR])
+        resto = len(en_conflicto) - MAX_IDS_EN_EL_ERROR
+        mas = f" (y {resto} más)" if resto > 0 else ""
+        raise ErrorDeEntrada(
+            f"Hay {len(en_conflicto)} id repetidos con valores distintos: {nombrados}{mas}. "
+            "Una misma planta no puede tener dos conjuntos de datos: corregí el archivo."
+        )
+
+    descartadas = tabla.duplicated(keep="first")
+    cantidad = int(descartadas.sum())
+    if cantidad == 0:
+        return tabla.copy(), []
+    mensaje = f"Se descartaron {cantidad} filas repetidas (mismo id y mismos valores)."
+    return tabla[~descartadas].copy(), [Advertencia("ID_DUPLICADO", mensaje)]
