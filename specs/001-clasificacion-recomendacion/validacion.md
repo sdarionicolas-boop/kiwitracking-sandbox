@@ -1,6 +1,6 @@
 # Validación — Spec 001
 
-Fecha de la corrida: 21/10/2026 (incluye el Cambio 1, sección 7). Comando: `.venv\Scripts\python -m pytest -W error` → **281 tests, 281 pasan, 0 avisos**.
+Fecha de la corrida: 21/10/2026 (incluye los Cambios 1 y 2, secciones 7 y 8). Comando: `.venv\Scripts\python -m pytest -W error` → **331 tests, 331 pasan, 0 avisos**.
 
 ## 1. Matriz de requisitos
 
@@ -31,18 +31,18 @@ Un test "cubre" un RF cuando su nombre lleva el número (`test_rfN_...`). Los n�
 | 21 | 5 | OK | test_analisis, test_clasificacion | `std = 0`: estabilidad vacía, aviso y "Observar" |
 | 22 | 6 | OK | test_clasificacion | p33, p66 y p75 con interpolación lineal |
 | 23 | 5 | OK | test_clasificacion | Ambiente, con los bordes en p33 y p66 |
-| 24 | 9 | OK | test_clasificacion | Recomendación, bordes y estabilidad vacía |
+| 24 | 52 | OK | test_clasificacion | Recomendación con bordes estrictos (Intervenir `< p33`), estabilidad vacía e invariante Mantener ⊂ Alto Potencial, Intervenir ⊂ Limitante |
 | 25 | 9 | OK | test_analisis, test_clasificacion | Ajuste por frío deficiente y aviso si falta el dato |
 | 26 | 10 | OK | test_analisis, test_resultado | Resultado con tabla, resumen (incluido `escalar_std`) y advertencias en orden |
 | 27 | 15 | OK | test_analisis, test_clasificacion | `escalar_std`: estabilidad = `KVPI_mean` / `KVPI_std` solo donde hubo corrección; sin efecto si no se corrigió |
 
-**Ninguno de los 27 RF queda sin test.** Los más delgados son RF-13 (2 tests) y RF-10 (3 tests); alcanzan para su comportamiento, pero son los primeros candidatos a reforzar. Los 12 tests `test_cambio1_*` de `test_golden` verifican el Cambio 1 contra el lote real y no llevan número de RF en el nombre.
+**Ninguno de los 27 RF queda sin test.** Los más delgados son RF-13 (2 tests) y RF-10 (3 tests); alcanzan para su comportamiento, pero son los primeros candidatos a reforzar. Los 12 tests `test_cambio1_*` y los 7 `test_cambio2_*` de `test_golden` verifican los cambios contra el lote real y no llevan número de RF en el nombre. RF-24 pasa de 9 a 52 tests porque el invariante se prueba en 40 tablas aleatorias con empates.
 
 ## 2. Criterios de finalización
 
 | # | Criterio | Estado | Evidencia |
 |---|---|---|---|
-| 1 | Todos los tests RF pasan | **Cumplido** | 281/281 |
+| 1 | Todos los tests RF pasan | **Cumplido** | 331/331 |
 | 2 | `KVPI_corregido`, `estabilidad` y umbrales con tolerancia 1e-6; ambiente y recomendación exactos | **Cumplido** | `test_golden`: diferencia máxima 1,1e-16 y 2,3e-13; las 159 plantas coinciden |
 | 3 | FC = 1,2262 ± 1e-3 | **Cumplido** | FC = 1,22617; p = 1,0e-26 |
 | 4 | El cruce con `malla_zona.geojson` da 53 plantas | **Cumplido** | 53, y coincide planta por planta con el notebook |
@@ -86,7 +86,7 @@ Fueron tomadas para poder avanzar y siguen como dudas abiertas en `spec.md`:
 ## 6. Dudas abiertas de método (te corresponden)
 
 1. ~~`estabilidad` con el `KVPI_std` sin corregir~~ **Resuelta con el Cambio 1** (sección 7): parámetro `escalar_std`. Queda decidir si pasa a ser el valor por defecto en una versión futura.
-2. `<` frente a `≤` en p33 (Limitante frente a Intervenir).
+2. ~~`<` frente a `≤` en p33~~ **Resuelta con el Cambio 2** (sección 8).
 3. Prueba t de Student frente a Welch.
 4. `id` duplicados.
 5. FC publicado como 1,226 / 1,227 y calculado 1,2262.
@@ -101,6 +101,15 @@ Ciclo completo de SDD: duda detectada y medida → decisión (opción C: paráme
 - **Sensibilidad:** dos mutaciones (ignorar `escalar_std`; aplicarlo siempre) hacen fallar 8 tests cada una.
 - **Hallazgo:** aun con el cálculo consistente, las plantas bajo malla son menos estables (9,32) que las de afuera (14,46). La corrección ajusta el nivel del KVPI, no su variabilidad.
 
+## 8. Cambio 2: borde estricto en p33 (RF-24)
+
+- **Problema:** Limitante era `< p33` pero Intervenir era `≤ p33`: una planta justo en p33 era "Transicional" e "Intervenir" a la vez.
+- **Decisión (opción A):** Intervenir pasa a `< p33`. Los ambientes no se tocan (RF-23). Invariante: toda "Mantener" es "Alto Potencial" y toda "Intervenir" es "Limitante".
+- **Efecto en el lote de referencia: ninguno.** Ninguna de las 159 plantas cae exactamente en p33 ni en p66 (p33 interpolado cae entre dos valores distintos, 0,5359 y 0,5371). Los tests del golden pasaron sin modificarse.
+- **Dónde sí importa:** en tablas con valores repetidos. De 40 tablas aleatorias con empates, 26 violaban el invariante antes del cambio y ninguna lo viola ahora.
+- **Verificado en el lote real** para las 6 combinaciones de estado de frío y `escalar_std`.
+- **Sensibilidad:** volver al `≤` hace fallar 29 tests, todos en `test_clasificacion`; el golden no los detecta, y es lo esperado, porque el lote no tiene empates. La protección está en los tests con tablas chicas y aleatorias.
+
 ## Veredicto
 
-**La spec 001 está cumplida, con el Cambio 1 incorporado.** Los 27 requisitos tienen test, los 281 pasan, el núcleo reproduce el resultado publicado de las 159 plantas y la verificación visual del mapa fue confirmada por una persona. Las limitaciones de la sección 4 y las dudas de las secciones 5 y 6 siguen vigentes.
+**La spec 001 está cumplida, con los Cambios 1 y 2 incorporados.** Los 27 requisitos tienen test, los 331 pasan, el núcleo reproduce el resultado publicado de las 159 plantas y la verificación visual del mapa fue confirmada por una persona. Las limitaciones de la sección 4 y las dudas de las secciones 5 y 6 siguen vigentes.
