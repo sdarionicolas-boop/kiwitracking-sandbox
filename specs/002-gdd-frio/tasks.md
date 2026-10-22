@@ -88,7 +88,7 @@ Reglas: una tarea a la vez, en orden. En cada una, primero se escribe el test y 
   - Cubre: RF-19, RF-20, criterios 3 y 4.
   - Hecho cuando: las horas son 956,5 / 853,5 / 925,0 / 1.090,4 / 853,5 / 1.128,8 para 2019 a 2024 (123 días) y 834,2 para 2025 (119 de 123 días), con tolerancia 0,05 h; los estados son "Óptimo" en 2019, 2022 y 2024 y "Adecuado" en 2020, 2021, 2023 y 2025; ninguno es "Deficiente".
 
-- [ ] **T2.18. Campaña, GDD e integración (criterios 5, 6 y 7).**
+- [x] **T2.18. Campaña, GDD e integración (criterios 5, 6 y 7).**
   - Cubre: RF-18, RF-22, RF-23, RF-28, criterios 5 a 7.
   - Hecho cuando: sin `campana` el resultado es el invierno 2025 ("Adecuado", 0,9675 de cobertura, hueco 4, con `CAMPANA_NO_INDICADA`); con `campana=2024` es el invierno 2024 ("Óptimo", 1.128,8 h, sin esa advertencia); las temporadas de GDD 2019, 2020, 2021, 2023 y 2024 son completas y la 2022 (cobertura 0,901, hueco de 34 días), la 2018 y la 2025 son incompletas; pasar cualquiera de los dos estados a `analizar()` sobre el lote de referencia da 16 "Mantener" y 19 "Intervenir".
 
