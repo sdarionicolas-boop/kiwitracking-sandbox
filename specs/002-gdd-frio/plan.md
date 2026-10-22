@@ -108,5 +108,5 @@ Todas siguen como dudas abiertas y se pueden cambiar:
 - **C8.** Con `Tmax = Tmin = umbral` se aplica primero "24 horas si `Tmax ≤ umbral`", como el notebook.
 - **C9.** Los nombres de columnas son los de la sección 3.
 - **C10.** Una fecha sin fila y una con valor vacío cuentan igual como faltantes.
-- **C13.** Si una columna de temperatura es de texto y varios valores tienen coma decimal, el error lo menciona como posible causa.
+- **C13 (resuelto, opción A).** No hay lector de clima propio: se usa `leer_csv()` de la spec 001. Si una columna de temperatura es de texto y varios valores tienen coma decimal, el error lo menciona como posible causa.
 - **C14.** Las advertencias por período se ordenan por etiqueta y, a igual etiqueta, la de GDD antes que la de frío.

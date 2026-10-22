@@ -86,7 +86,7 @@ Parámetros opcionales, con su valor por defecto:
 - El núcleo no lee ni escribe archivos ni contiene rutas fijas (constitución #6, #9).
 - El núcleo no modifica la tabla de entrada.
 - Todos los umbrales y valores de la sección Entradas son parámetros explícitos con sus valores por defecto (constitución #7).
-- La lectura de archivos, si se ofrece, vive en la capa de entrada y salida y respeta la constitución #8 (UTF-8).
+- La spec no agrega un lector propio: el clima se lee con `leer_csv()` de la capa de entrada y salida (UTF-8, tolera el BOM de Excel) y entra a `calcular_clima()` como tabla, que ignora las columnas extra (hallazgo C13). Una columna con coma decimal da el error de RF-3 con esa posible causa.
 
 ## Casos límite
 - `meses_frio` que cruza el fin de año en modo "invierno": error (RF-9); en modo "temporada" se admite, porque ahí la mezcla de períodos es lo que se reproduce.

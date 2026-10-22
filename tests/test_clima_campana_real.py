@@ -101,3 +101,30 @@ def test_c3_la_temporada_2024_de_gdd_es_completa_con_cobertura_0_989_y_no_genera
 
     assert fila["completo"] and fila["cobertura"] == pytest.approx(361 / 365)
     assert not [a for a in clima.advertencias if a.mensaje.startswith("GDD, temporada 2024")]
+
+
+# --- C13: el clima se lee con `leer_csv()` de la capa de entrada y salida y entra como tabla ---
+
+
+def test_c13_de_punta_a_punta_leer_csv_calcular_clima_estado_y_analizar_da_16_mantener_y_19_intervenir(lote):
+    from kiwitracking.io import leer_csv
+
+    tabla = leer_csv(GOLDEN / "clima_diario.csv")  # trae además la columna `origen`, que se ignora
+    estado = estado_frio_de_campana(calcular_clima(tabla, ParametrosClima()), campana=2024)
+
+    resultado = analizar(lote, huella_confirmada=huella(lote), estado_frio_ultima_campana=estado.estado)
+
+    assert (estado.periodo, estado.estado) == (2024, "Óptimo")
+    assert resultado.tabla["recomendacion"].value_counts().to_dict() == {"Intervenir": 19, "Mantener": 16, "Observar": 124}
+
+
+def test_c13_un_csv_de_clima_guardado_desde_excel_con_bom_se_lee_igual(tmp_path):
+    from kiwitracking.io import leer_csv
+
+    ruta = tmp_path / "clima_con_bom.csv"
+    ruta.write_text("date,Tmax,Tmin\n2024-07-01,12.5,3.0\n2024-07-02,14.0,4.5\n", encoding="utf-8-sig")
+
+    tabla = leer_csv(ruta)
+
+    assert list(tabla.columns) == ["date", "Tmax", "Tmin"]  # sin "﻿date"
+    assert len(calcular_clima(tabla, ParametrosClima()).gdd) == 1
