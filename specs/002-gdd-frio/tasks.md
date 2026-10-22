@@ -94,7 +94,7 @@ Reglas: una tarea a la vez, en orden. En cada una, primero se escribe el test y 
 
 ## Cierre
 
-- [ ] **T2.19. Validación final.**
+- [x] **T2.19. Validación final.**
   - Cubre: criterio 8 de la spec (cada RF con test).
   - Hecho cuando: existe `validacion.md` con la matriz de los 28 RF contra sus tests y el estado de cada criterio; la suite completa pasa con `-W error` **sin tests saltados** en `test_clima_golden.py`; se hicieron mutaciones (borde de la cobertura, formato de fecha, `max_hueco_dias`, valor por defecto de `ventana_frio`) y cada una hace fallar al menos un test; el trabajo queda commiteado.
 
