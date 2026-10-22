@@ -84,11 +84,11 @@ Reglas: una tarea a la vez, en orden. En cada una, primero se escribe el test y 
 
 ## Entrada y salida
 
-- [ ] **T17. Lectura de CSV en UTF-8.**
+- [x] **T17. Lectura de CSV en UTF-8.**
   - Cubre: RF-3.
   - Hecho cuando: un CSV UTF-8 se lee bien (con tildes); un CSV guardado en Windows-1252 con tildes da `ErrorDeEntrada` que menciona la codificación.
 
-- [ ] **T18. Texto corrupto en columnas de categorías.**
+- [x] **T18. Texto corrupto en columnas de categorías.**
   - Cubre: RF-4.
   - Hecho cuando: un CSV UTF-8 válido con `Ã“ptimo` en `estado_frio` da un error que nombra la columna y el valor; el mismo texto en otra columna no da error.
 
