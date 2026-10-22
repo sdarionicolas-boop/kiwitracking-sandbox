@@ -66,15 +66,15 @@ Reglas: una tarea a la vez, en orden. En cada una, primero se escribe el test y 
 
 ## Última campaña
 
-- [ ] **T2.13. Última campaña clasificable.** `campana.py`.
+- [x] **T2.13. Última campaña clasificable.** `campana.py`.
   - Cubre: RF-22, RF-24, RF-28.
   - Hecho cuando: `estado_frio_de_campana` sin `campana` devuelve el estado de la ventana clasificable más reciente, con período, horas, cobertura y hueco máximo, y avisa `CAMPANA_NO_INDICADA` nombrando el período usado; si ninguna es clasificable devuelve estado vacío y `SIN_PERIODO_CLASIFICABLE`.
 
-- [ ] **T2.14. Campaña indicada.**
+- [x] **T2.14. Campaña indicada.**
   - Cubre: RF-23, RF-25.
   - Hecho cuando: con `campana=Y` usa el período de etiqueta Y (en modo "invierno", el invierno de Y; en "temporada", la temporada Y) y no avisa `CAMPANA_NO_INDICADA`; si ese período no existe o no es clasificable da `ErrorDeEntrada` que dice el motivo (sin datos, o su cobertura y hueco); una ventana elegida con cobertura menor que 1 avisa `COBERTURA_PARCIAL`.
 
-- [ ] **T2.15. Integración con la spec 001.**
+- [x] **T2.15. Integración con la spec 001.**
   - Cubre: criterio 7 (con datos sintéticos); consistencia de los textos de estado (hallazgo C12).
   - Hecho cuando: el estado devuelto por `estado_frio_de_campana` lo acepta `analizar(..., estado_frio_ultima_campana=...)` sin error, para los tres estados posibles; un estado vacío llega a `analizar()` y produce `SIN_ESTADO_FRIO`.
 

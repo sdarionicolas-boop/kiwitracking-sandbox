@@ -26,7 +26,7 @@ class ResultadoClima:
     ventana_frio: str
 
 
-def _porcentaje(fraccion: float) -> str:
+def formatear_porcentaje(fraccion: float) -> str:
     return f"{fraccion * 100:.1f}".replace(".", ",") + " %"
 
 
@@ -52,7 +52,7 @@ def calcular_gdd(
             int(fila.temporada),
             Advertencia(
                 "PERIODO_INCOMPLETO",
-                f"GDD, temporada {fila.temporada}: cobertura {_porcentaje(fila.cobertura)}, hueco máximo {fila.hueco_maximo} días; "
+                f"GDD, temporada {fila.temporada}: cobertura {formatear_porcentaje(fila.cobertura)}, hueco máximo {fila.hueco_maximo} días; "
                 "el GDD está calculado solo con los días disponibles.",
             ),
         )
@@ -96,7 +96,7 @@ def calcular_frio(
                     int(fila.periodo),
                     Advertencia(
                         "PERIODO_INCOMPLETO",
-                        f"Frío, ventana {fila.periodo}: cobertura {_porcentaje(fila.cobertura)}, hueco máximo {fila.hueco_maximo} días; "
+                        f"Frío, ventana {fila.periodo}: cobertura {formatear_porcentaje(fila.cobertura)}, hueco máximo {fila.hueco_maximo} días; "
                         "no se clasifica.",
                     ),
                 )
@@ -107,7 +107,7 @@ def calcular_frio(
                     int(fila.periodo),
                     Advertencia(
                         "COBERTURA_PARCIAL",
-                        f"Frío, ventana {fila.periodo}: cobertura {_porcentaje(fila.cobertura)}; las horas están calculadas "
+                        f"Frío, ventana {fila.periodo}: cobertura {formatear_porcentaje(fila.cobertura)}; las horas están calculadas "
                         "con los días disponibles.",
                     ),
                 )
