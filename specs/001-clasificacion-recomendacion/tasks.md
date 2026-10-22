@@ -102,11 +102,11 @@ Reglas: una tarea a la vez, en orden. En cada una, primero se escribe el test y 
 
 ## Visualización
 
-- [ ] **T21. Datos del mapa y huella devuelta.**
+- [x] **T21. Datos del mapa y huella devuelta.**
   - Cubre: RF-15 (parte 1), RF-16 (devolución).
   - Hecho cuando: una función devuelve la lista de puntos con su color según `bajo_malla` y la huella de la tabla, sin generar HTML todavía.
 
-- [ ] **T22. Mapa HTML de verificación.**
+- [x] **T22. Mapa HTML de verificación.**
   - Cubre: RF-15 (parte 2).
   - Hecho cuando: se genera un archivo HTML con `folium` que contiene un marcador por planta y el polígono, y la función devuelve la misma huella que `huella()`.
 
