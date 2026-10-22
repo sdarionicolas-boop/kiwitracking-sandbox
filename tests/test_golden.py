@@ -11,6 +11,7 @@ import pytest
 
 from kiwitracking.analisis import analizar
 from kiwitracking.huella import huella
+from kiwitracking.io import cruzar_con_malla, leer_poligono_geojson
 
 GOLDEN = Path(__file__).parent / "golden" / "datos_plantas_completos.csv"
 
@@ -111,3 +112,40 @@ def test_control_negativo_sin_corregir_los_resultados_ya_no_coinciden_con_el_gol
     diferencia = (sin_corregir["KVPI_corregido"] - golden["KVPI_corregido"]).abs().max()
     assert diferencia > 0.05
     assert sin_corregir["ambiente"].tolist() != golden["ambiente"].tolist()
+
+
+# --- T20: el cruce con el polígono reproduce la columna bajo_malla del lote ----------------
+
+
+def test_criterio4_el_cruce_con_malla_zona_geojson_da_53_plantas_bajo_malla(golden):
+    poligono, crs_poligono = leer_poligono_geojson(GOLDEN.parent / "malla_zona.geojson")
+    plantas = golden.reset_index()[["id", "X", "Y"]]
+
+    bajo_malla, advertencias = cruzar_con_malla(plantas, poligono, "EPSG:4326", crs_poligono)
+
+    assert int(bajo_malla.sum()) == 53
+    assert advertencias == []
+
+
+def test_criterio4_el_cruce_coincide_planta_por_planta_con_la_columna_del_notebook(golden):
+    poligono, crs_poligono = leer_poligono_geojson(GOLDEN.parent / "malla_zona.geojson")
+    plantas = golden.reset_index()[["id", "X", "Y"]]
+
+    bajo_malla, _ = cruzar_con_malla(plantas, poligono, "EPSG:4326", crs_poligono)
+
+    assert bajo_malla.tolist() == golden["bajo_malla"].tolist()
+
+
+def test_criterio4_y_6_del_cruce_al_analisis_completo_reproduce_el_resultado_publicado(golden):
+    # De punta a punta: coordenadas + polígono -> bajo_malla -> huella -> analizar().
+    poligono, crs_poligono = leer_poligono_geojson(GOLDEN.parent / "malla_zona.geojson")
+    plantas = golden.reset_index()[["id", "KVPI_mean", "KVPI_std", "X", "Y"]]
+    bajo_malla, _ = cruzar_con_malla(plantas, poligono, "EPSG:4326", crs_poligono)
+    entrada = plantas.assign(bajo_malla=bajo_malla)
+
+    resultado = analizar(entrada, huella_confirmada=huella(entrada), estado_frio_ultima_campana="Deficiente")
+
+    resultado_por_id = resultado.tabla.set_index("id").loc[golden.index]
+    assert resultado.resumen.fc == pytest.approx(1.2262, abs=1e-3)
+    assert resultado_por_id["recomendacion"].tolist() == golden["recomendacion"].tolist()
+    assert resultado_por_id["ambiente"].tolist() == golden["ambiente"].tolist()

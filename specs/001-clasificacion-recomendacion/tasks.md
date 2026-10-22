@@ -92,11 +92,11 @@ Reglas: una tarea a la vez, en orden. En cada una, primero se escribe el test y 
   - Cubre: RF-4.
   - Hecho cuando: un CSV UTF-8 válido con `Ã“ptimo` en `estado_frio` da un error que nombra la columna y el valor; el mismo texto en otra columna no da error.
 
-- [ ] **T19. Cruce punto-en-polígono con sistema de coordenadas.**
+- [x] **T19. Cruce punto-en-polígono con sistema de coordenadas.**
   - Cubre: RF-17, RF-18.
   - Hecho cuando: con un polígono cuadrado y 4 puntos conocidos (2 dentro, 2 fuera) sale `[1, 1, 0, 0]`; sin sistema de coordenadas declarado, error; con puntos en lon/lat y polígono en UTM, el resultado es el mismo que con ambos en el mismo sistema.
 
-- [ ] **T20. Advertencia por cruce sospechoso y golden del cruce.**
+- [x] **T20. Advertencia por cruce sospechoso y golden del cruce.**
   - Cubre: RF-19, criterio de finalización 4.
   - Hecho cuando: si el cruce da 0 o todas las plantas con un polígono no vacío, sale la advertencia de posible error de coordenadas (y no se trata en silencio como lote sin malla); con las coordenadas del golden y `tests/golden/malla_zona.geojson`, el cruce da 53 plantas bajo malla.
 
