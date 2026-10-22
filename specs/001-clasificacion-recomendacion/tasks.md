@@ -68,13 +68,13 @@ Reglas: una tarea a la vez, en orden. En cada una, primero se escribe el test y 
   - Cubre: RF-24, RF-21 (planta con `std = 0` → "Observar").
   - Hecho cuando: hay un test por caso: "Mantener", "Intervenir", "Observar", un empate exacto en p33 con estabilidad alta (que da "Intervenir"), y una planta con estabilidad vacía que da "Observar".
 
-- [ ] **T14. Ajuste por horas de frío.**
+- [x] **T14. Ajuste por horas de frío.**
   - Cubre: RF-25.
   - Hecho cuando: con "Deficiente", las "Mantener" pasan a "Observar"; con "Adecuado" u "Óptimo" quedan igual; sin el dato no hay ajuste y sale `SIN_ESTADO_FRIO`.
 
 ## Integración y golden
 
-- [ ] **T15. `analizar()` completa.**
+- [x] **T15. `analizar()` completa.**
   - Cubre: RF-26 y el encadenamiento de RF-1 a RF-25.
   - Hecho cuando: una tabla sintética de 12 plantas atraviesa todo el flujo y devuelve un `Resultado` con tabla, resumen (FC, p, tamaños, umbrales, huella, `correccion_aplicada`) y la lista de advertencias; la tabla de entrada no se modificó.
 

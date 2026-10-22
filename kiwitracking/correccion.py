@@ -42,8 +42,13 @@ def calcular_factor(tabla: pd.DataFrame) -> FactorMalla:
     return FactorMalla(fc=fc, p_valor=p_valor, n_bajo=len(bajo), n_fuera=len(fuera), media_bajo=media_bajo)
 
 
-def evaluar_confirmacion(tabla: pd.DataFrame, huella_confirmada: str | None) -> Advertencia | None:
+def evaluar_confirmacion(
+    tabla: pd.DataFrame, huella_confirmada: str | None, huella_referencia: str | None = None
+) -> Advertencia | None:
     """Verifica la confirmación visual. Devuelve None si la huella coincide con la tabla.
+
+    `huella_referencia` es la huella contra la que se compara (por defecto, la de `tabla`); sirve
+    cuando la tabla ya perdió plantas pero lo confirmado fue el mapa de la tabla completa.
 
     No depende del modo de corrección: sin confirmación válida no se corrige en ningún modo.
     """
@@ -53,7 +58,7 @@ def evaluar_confirmacion(tabla: pd.DataFrame, huella_confirmada: str | None) -> 
             "FALTA_CONFIRMACION",
             "Falta la validación visual de las plantas bajo malla: no se aplicó ninguna corrección.",
         )
-    if confirmada != huella(tabla):
+    if confirmada != (huella_referencia or huella(tabla)):
         return Advertencia(
             "HUELLA_NO_COINCIDE",
             "La huella confirmada no corresponde a estos datos (cambió el conjunto de plantas "
@@ -165,12 +170,13 @@ def resolver_correccion(
     huella_confirmada: str | None,
     alfa: float = 0.05,
     min_plantas_grupo: int = 2,
+    huella_referencia: str | None = None,
 ) -> CorreccionResuelta:
     """Corrección completa: primero la confirmación visual (RF-8, RF-9), después la decisión."""
     validar_parametros(correccion=modo)
     factor = calcular_factor(tabla)
 
-    bloqueo = evaluar_confirmacion(tabla, huella_confirmada)
+    bloqueo = evaluar_confirmacion(tabla, huella_confirmada, huella_referencia)
     if bloqueo is not None:
         return CorreccionResuelta(aplicar_correccion(tabla, None), factor, False, [bloqueo])
 

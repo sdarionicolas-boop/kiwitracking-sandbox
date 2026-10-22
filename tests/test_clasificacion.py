@@ -3,8 +3,10 @@ import math
 import pandas as pd
 import pytest
 
+from kiwitracking.resultado import ErrorDeEntrada
 from kiwitracking.clasificacion import (
     Umbrales,
+    ajustar_por_frio,
     asignar_ambiente,
     asignar_recomendacion,
     calcular_estabilidad,
@@ -292,4 +294,64 @@ def test_rf24_conserva_las_columnas_y_no_modifica_la_entrada():
     resultado = asignar_recomendacion(entrada, UMBRALES)
 
     assert list(resultado.columns) == list(copia.columns) + ["recomendacion"]
+    pd.testing.assert_frame_equal(entrada, copia)
+
+
+# --- T14: ajuste por horas de frío ------------------------------------------------------
+
+
+def _tabla_frio():
+    return pd.DataFrame(
+        {
+            "id": [1, 2, 3, 4],
+            "recomendacion": ["Mantener", "Intervenir", "Observar", "Mantener"],
+        }
+    )
+
+
+def test_rf25_con_frio_deficiente_las_mantener_pasan_a_observar():
+    tabla, _ = ajustar_por_frio(_tabla_frio(), "Deficiente")
+
+    assert tabla["recomendacion"].tolist() == ["Observar", "Intervenir", "Observar", "Observar"]
+
+
+def test_rf25_con_frio_deficiente_no_se_tocan_intervenir_ni_observar():
+    tabla, _ = ajustar_por_frio(_tabla_frio(), "Deficiente")
+
+    assert tabla.loc[1, "recomendacion"] == "Intervenir"
+    assert tabla.loc[2, "recomendacion"] == "Observar"
+
+
+@pytest.mark.parametrize("estado", ["Adecuado", "Óptimo"])
+def test_rf25_con_frio_adecuado_u_optimo_no_se_cambia_nada_ni_se_avisa(estado):
+    tabla, advertencias = ajustar_por_frio(_tabla_frio(), estado)
+
+    assert tabla["recomendacion"].tolist() == _tabla_frio()["recomendacion"].tolist()
+    assert advertencias == []
+
+
+def test_rf25_sin_estado_de_frio_no_hay_ajuste_y_se_avisa_sin_estado_frio():
+    tabla, advertencias = ajustar_por_frio(_tabla_frio(), None)
+
+    assert tabla["recomendacion"].tolist() == _tabla_frio()["recomendacion"].tolist()
+    assert [a.codigo for a in advertencias] == ["SIN_ESTADO_FRIO"]
+
+
+def test_rf25_con_frio_deficiente_no_hay_advertencia():
+    _, advertencias = ajustar_por_frio(_tabla_frio(), "Deficiente")
+
+    assert advertencias == []
+
+
+def test_rf5_un_estado_de_frio_no_permitido_da_error():
+    with pytest.raises(ErrorDeEntrada, match="Deficiente"):
+        ajustar_por_frio(_tabla_frio(), "deficiente")
+
+
+def test_rf25_no_modifica_la_tabla_de_entrada():
+    entrada = _tabla_frio()
+    copia = entrada.copy()
+
+    ajustar_por_frio(entrada, "Deficiente")
+
     pd.testing.assert_frame_equal(entrada, copia)

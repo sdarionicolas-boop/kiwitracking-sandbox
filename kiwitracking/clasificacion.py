@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from kiwitracking.resultado import Advertencia
+from kiwitracking.validacion import validar_parametros
 
 
 def calcular_estabilidad(tabla: pd.DataFrame) -> tuple[pd.DataFrame, list[Advertencia]]:
@@ -82,3 +83,22 @@ def asignar_recomendacion(tabla: pd.DataFrame, umbrales: Umbrales) -> pd.DataFra
         default="Observar",
     )
     return resultado
+
+
+def ajustar_por_frio(
+    tabla: pd.DataFrame, estado_frio_ultima_campana: str | None
+) -> tuple[pd.DataFrame, list[Advertencia]]:
+    """Con frío "Deficiente" en la última campaña, las "Mantener" pasan a "Observar" (RF-25).
+
+    Sin el dato no se ajusta nada y se avisa (SIN_ESTADO_FRIO).
+    """
+    validar_parametros(estado_frio_ultima_campana=estado_frio_ultima_campana)
+    resultado = tabla.copy()
+
+    if estado_frio_ultima_campana is None:
+        aviso = "No se informó el estado de horas de frío de la última campaña: no se aplicó el ajuste."
+        return resultado, [Advertencia("SIN_ESTADO_FRIO", aviso)]
+
+    if estado_frio_ultima_campana == "Deficiente":
+        resultado.loc[resultado["recomendacion"] == "Mantener", "recomendacion"] = "Observar"
+    return resultado, []

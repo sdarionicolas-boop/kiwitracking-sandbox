@@ -90,3 +90,4 @@ Tabla por planta con: `id`, `KVPI_mean`, `KVPI_std`, `bajo_malla` (0/1). Opciona
 - **[NECESITA ACLARACIÓN]** Tratamiento de `id` duplicados.
 - **[NECESITA ACLARACIÓN]** El FC figura como 1,226 / 1,227 en la documentación y da 1,2262 con los datos.
 - **[NECESITA ACLARACIÓN]** En modo "auto", si los dos grupos son válidos pero no se puede calcular el p-valor (ambos sin variación), la implementación no corrige y avisa (`P_NO_DISPONIBLE`). La spec no cubre este caso.
+- **[NECESITA ACLARACIÓN]** Decisiones de implementación (T15): la huella se calcula sobre la tabla de entrada completa (antes de excluir plantas sin KVPI); si no queda ninguna planta con `KVPI_mean` válido se lanza `ErrorDeEntrada`.

@@ -444,3 +444,24 @@ def test_rf7_resolver_no_modifica_la_tabla_de_entrada():
     resolver_correccion(tabla, "auto", huella(tabla))
 
     pd.testing.assert_frame_equal(tabla, copia)
+
+
+# --- T15: huella de referencia (la confirmación se compara con la tabla completa de entrada) ---
+
+
+def test_rf9_evaluar_confirmacion_compara_contra_la_huella_de_referencia_si_se_da():
+    completa = _tabla(fuera=[0.6, 0.6], bajo=[0.5, 0.5, 0.5])
+    filtrada = completa.iloc[:-1]  # se perdió una planta bajo malla: otra huella
+    assert huella(completa) != huella(filtrada)
+
+    assert evaluar_confirmacion(filtrada, huella(completa), huella_referencia=huella(completa)) is None
+    assert evaluar_confirmacion(filtrada, huella(completa)).codigo == "HUELLA_NO_COINCIDE"
+
+
+def test_rf9_resolver_acepta_la_huella_de_referencia():
+    completa = _tabla_distinta()
+    filtrada = completa.iloc[:-1]
+
+    r = resolver_correccion(filtrada, "auto", huella(completa), huella_referencia=huella(completa))
+
+    assert r.aplicada is True
