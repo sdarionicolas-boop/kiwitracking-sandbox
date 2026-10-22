@@ -62,7 +62,7 @@ Parámetros opcionales, con su valor por defecto:
 
 **GDD**
 - **RF-17.** El sistema DEBE devolver, por temporada, `GDD_total` (suma del GDD diario de los días disponibles) junto con la información de RF-14 y RF-15. El valor DEBE calcularse aunque el período no sea completo.
-- **RF-18.** SI una temporada no es completa, ENTONCES el sistema DEBE registrar una advertencia `PERIODO_INCOMPLETO` que nombre el período, su cobertura y su hueco máximo.
+- **RF-18.** SI una temporada no es completa, ENTONCES el sistema DEBE registrar una advertencia `PERIODO_INCOMPLETO` que nombre el período, su cobertura y su hueco máximo. Una temporada completa con cobertura menor que 1 NO genera advertencia: su cobertura queda en la tabla (RF-17) (hallazgo C3).
 
 **Horas de frío**
 - **RF-19.** El sistema DEBE devolver, por ventana (RF-13), `Horas_Frio` (suma de las horas diarias de los días disponibles) junto con la información de RF-14 y RF-15.

@@ -91,3 +91,13 @@ def test_criterio7_cualquiera_de_los_dos_estados_da_16_mantener_y_19_intervenir_
 
     recomendaciones = resultado.tabla["recomendacion"].value_counts().to_dict()
     assert (recomendaciones["Mantener"], recomendaciones["Intervenir"]) == (16, 19)
+
+
+# --- C3: una temporada de GDD completa con cobertura menor que 1 no avisa (decisión del 22/10/2026) ---
+
+
+def test_c3_la_temporada_2024_de_gdd_es_completa_con_cobertura_0_989_y_no_genera_ningun_aviso(clima):
+    fila = clima.gdd.set_index("temporada").loc[2024]
+
+    assert fila["completo"] and fila["cobertura"] == pytest.approx(361 / 365)
+    assert not [a for a in clima.advertencias if a.mensaje.startswith("GDD, temporada 2024")]

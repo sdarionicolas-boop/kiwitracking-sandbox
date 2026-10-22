@@ -102,7 +102,7 @@ Mismas reglas de la spec 001: cada RF tiene un test que lleva su número (`test_
 
 Todas siguen como dudas abiertas y se pueden cambiar:
 
-- **C3.** Las temporadas de GDD completas con cobertura menor que 1 **no** avisan (RF-18 solo cubre las incompletas), como está escrito. Queda la asimetría con el frío.
+- **C3 (resuelto, opción B).** Las temporadas de GDD completas con cobertura menor que 1 **no** avisan (RF-18 solo cubre las incompletas); la cobertura se ve en la tabla. Queda la asimetría con el frío, aceptada a propósito.
 - **C4.** El código `PERIODO_INCOMPLETO` es el mismo, pero el mensaje empieza con "GDD, temporada 2022" o "Frío, ventana 2022" para distinguirlos.
 - **C6.** Los duplicados se comparan solo por `date`, `Tmax` y `Tmin` (D9).
 - **C8.** Con `Tmax = Tmin = umbral` se aplica primero "24 horas si `Tmax ≤ umbral`", como el notebook.
