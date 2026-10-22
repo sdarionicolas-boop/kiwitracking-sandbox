@@ -154,3 +154,19 @@ Mismas reglas. Con tablas sin empates en p33 (como el lote de referencia) nada d
   - Cubre: criterios 2 y 5, y el invariante sobre el lote real.
   - Hecho cuando: los tests del golden siguen pasando sin tocarse (el lote no tiene empates en p33), el invariante se verifica sobre las 159 plantas con y sin `escalar_std`, `validacion.md` registra el cambio y queda commiteado.
 
+## Cambio 3: `prueba_t` (RF-6, RF-26, RF-28)
+
+Mismas reglas. Con `prueba_t="student"` el resultado publicado (v1.1) tiene que reproducirse exactamente.
+
+- [x] **T30. `calcular_factor` con `prueba_t`.**
+  - Cubre: RF-6, RF-28.
+  - Hecho cuando: por defecto el p-valor es el de Welch; con `"student"` es el de varianzas iguales; el FC, los tamaños y la media no dependen de la prueba; un valor distinto de `"welch"` o `"student"` da `ErrorDeEntrada` que nombra los permitidos; el test viejo que fijaba Student por defecto fue reemplazado.
+
+- [x] **T31. `analizar()` acepta `prueba_t` y lo informa.**
+  - Cubre: RF-26, RF-28.
+  - Hecho cuando: `analizar(..., prueba_t=...)` y `resolver_correccion` propagan el parámetro, el `Resumen` trae `prueba_t`, un valor inválido llega como error desde `analizar()`, y por defecto el resumen dice "welch".
+
+- [x] **T32. Golden y validación del Cambio 3.**
+  - Cubre: criterios 2, 3 y 5, y la reproducción de v1.1.
+  - Hecho cuando: con `"student"` el p-valor del lote es 1,0e-26 (como en v1.1) y con Welch 5,9e-35; la decisión de corregir y todos los resultados del golden son idénticos con ambas; `validacion.md` registra el cambio (28 requisitos) y queda commiteado.
+

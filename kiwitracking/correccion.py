@@ -1,5 +1,6 @@
 """Corrección del KVPI por sesgo de malla de protección."""
 
+import warnings
 from dataclasses import dataclass
 
 import pandas as pd
@@ -25,7 +26,9 @@ class FactorMalla:
     media_bajo: float | None = None
 
 
-def calcular_factor(tabla: pd.DataFrame) -> FactorMalla:
+def calcular_factor(tabla: pd.DataFrame, prueba_t: str = "welch") -> FactorMalla:
+    """FC, p-valor y tamaños (RF-6). `prueba_t`: "welch" (varianzas desiguales) o "student" (iguales, v1.1)."""
+    validar_parametros(prueba_t=prueba_t)
     bajo = tabla.loc[tabla["bajo_malla"] == 1, "KVPI_mean"]
     fuera = tabla.loc[tabla["bajo_malla"] == 0, "KVPI_mean"]
 
@@ -36,7 +39,11 @@ def calcular_factor(tabla: pd.DataFrame) -> FactorMalla:
     p_valor = None
     hay_variacion = bajo.var() > 0 or fuera.var() > 0
     if len(bajo) >= 2 and len(fuera) >= 2 and hay_variacion:
-        p_valor = float(stats.ttest_ind(fuera, bajo, equal_var=True).pvalue)
+        with warnings.catch_warnings():
+            # Con un grupo de valores idénticos scipy avisa de pérdida de precisión, pero el resultado
+            # coincide con el cálculo a mano (verificado), así que ese aviso puntual no se propaga.
+            warnings.filterwarnings("ignore", message="Precision loss occurred", category=RuntimeWarning)
+            p_valor = float(stats.ttest_ind(fuera, bajo, equal_var=prueba_t == "student").pvalue)
 
     media_bajo = float(bajo.mean()) if len(bajo) > 0 else None
     return FactorMalla(fc=fc, p_valor=p_valor, n_bajo=len(bajo), n_fuera=len(fuera), media_bajo=media_bajo)
@@ -171,10 +178,11 @@ def resolver_correccion(
     alfa: float = 0.05,
     min_plantas_grupo: int = 2,
     huella_referencia: str | None = None,
+    prueba_t: str = "welch",
 ) -> CorreccionResuelta:
     """Corrección completa: primero la confirmación visual (RF-8, RF-9), después la decisión."""
-    validar_parametros(correccion=modo)
-    factor = calcular_factor(tabla)
+    validar_parametros(correccion=modo, prueba_t=prueba_t)
+    factor = calcular_factor(tabla, prueba_t)
 
     bloqueo = evaluar_confirmacion(tabla, huella_confirmada, huella_referencia)
     if bloqueo is not None:

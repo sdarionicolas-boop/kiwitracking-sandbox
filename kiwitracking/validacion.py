@@ -7,14 +7,19 @@ from kiwitracking.resultado import Advertencia, ErrorDeEntrada
 COLUMNAS_OBLIGATORIAS = ("KVPI_mean", "KVPI_std", "bajo_malla")
 MODOS_CORRECCION = ("auto", "forzar", "desactivar")
 ESTADOS_FRIO = ("Deficiente", "Adecuado", "Óptimo")
+PRUEBAS_T = ("welch", "student")
 
 
-def validar_parametros(correccion: str = "auto", estado_frio_ultima_campana: str | None = None) -> None:
+def validar_parametros(
+    correccion: str = "auto", estado_frio_ultima_campana: str | None = None, prueba_t: str = "welch"
+) -> None:
     """Detiene el análisis con ErrorDeEntrada si un parámetro tiene un valor no permitido."""
     if correccion not in MODOS_CORRECCION:
         raise ErrorDeEntrada(
             f"correccion={correccion!r} no es válido. Valores permitidos: {', '.join(MODOS_CORRECCION)}."
         )
+    if prueba_t not in PRUEBAS_T:
+        raise ErrorDeEntrada(f"prueba_t={prueba_t!r} no es válido. Valores permitidos: {', '.join(PRUEBAS_T)}.")
     if estado_frio_ultima_campana is not None and estado_frio_ultima_campana not in ESTADOS_FRIO:
         raise ErrorDeEntrada(
             f"estado_frio_ultima_campana={estado_frio_ultima_campana!r} no es válido. "

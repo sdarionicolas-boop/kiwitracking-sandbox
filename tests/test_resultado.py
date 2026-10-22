@@ -26,10 +26,11 @@ def test_rf26_resumen_tiene_los_campos_del_plan_con_valores_vacios_por_defecto()
     campos = {campo.name for campo in dataclasses.fields(resumen)}
     assert campos == {
         "fc", "p_valor", "n_bajo_malla", "n_fuera_malla", "correccion_aplicada",
-        "p33", "p66", "p75_estabilidad", "huella", "escalar_std",
+        "p33", "p66", "p75_estabilidad", "huella", "escalar_std", "prueba_t",
     }
     assert resumen.correccion_aplicada is False
     assert resumen.escalar_std is False
+    assert resumen.prueba_t == "welch"
     assert resumen.fc is None
 
 

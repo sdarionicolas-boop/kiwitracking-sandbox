@@ -282,3 +282,94 @@ def test_rf27_escalar_std_no_agrega_advertencias():
     resultado = _analizar_ok(escalar_std=True)
 
     assert resultado.advertencias == []
+
+
+# --- T31 (Cambio 3): prueba_t en analizar() ----------------------------------------------
+
+# Caso clásico donde Student engaña: el grupo grande (fuera de malla) casi no varía y el chico (bajo malla)
+# varía mucho. Student da p = 0.0005 y Welch p = 0.103: la decisión de corregir es distinta.
+FUERA_DESIGUAL = [0.553, 0.549, 0.556, 0.565, 0.558, 0.570, 0.558, 0.560, 0.575, 0.565]
+BAJO_DESIGUAL = [0.495, 0.511, 0.547]
+
+
+def _tabla_desigual():
+    kvpi = FUERA_DESIGUAL + BAJO_DESIGUAL
+    return pd.DataFrame(
+        {
+            "id": range(1, len(kvpi) + 1),
+            "KVPI_mean": kvpi,
+            "KVPI_std": [0.02] * len(kvpi),
+            "bajo_malla": [0] * len(FUERA_DESIGUAL) + [1] * len(BAJO_DESIGUAL),
+        }
+    )
+
+
+def test_rf26_por_defecto_el_resumen_dice_que_la_prueba_fue_welch():
+    assert _analizar_ok().resumen.prueba_t == "welch"
+
+
+def test_rf6_prueba_t_student_llega_hasta_el_resumen_con_su_p_valor():
+    tabla = _tabla_12()
+
+    welch = _analizar_ok(tabla)
+    student = _analizar_ok(tabla, prueba_t="student")
+
+    assert student.resumen.prueba_t == "student"
+    assert student.resumen.p_valor != pytest.approx(welch.resumen.p_valor)
+
+
+def test_rf6_el_p_valor_del_resumen_es_el_de_la_prueba_pedida():
+    from scipy import stats
+
+    tabla = _tabla_12()
+    bajo = tabla.loc[tabla["bajo_malla"] == 1, "KVPI_mean"]
+    fuera = tabla.loc[tabla["bajo_malla"] == 0, "KVPI_mean"]
+
+    welch = _analizar_ok(tabla, prueba_t="welch").resumen.p_valor
+    student = _analizar_ok(tabla, prueba_t="student").resumen.p_valor
+
+    assert welch == pytest.approx(stats.ttest_ind(fuera, bajo, equal_var=False).pvalue)
+    assert student == pytest.approx(stats.ttest_ind(fuera, bajo, equal_var=True).pvalue)
+
+
+def test_rf6_con_este_lote_ambas_pruebas_corrigen_y_la_tabla_resultante_es_la_misma():
+    tabla = _tabla_12()
+
+    welch = _analizar_ok(tabla, prueba_t="welch")
+    student = _analizar_ok(tabla, prueba_t="student")
+
+    assert welch.resumen.correccion_aplicada and student.resumen.correccion_aplicada
+    pd.testing.assert_frame_equal(welch.tabla, student.tabla)
+
+
+def test_rf6_la_eleccion_de_la_prueba_puede_cambiar_la_decision_de_corregir():
+    tabla = _tabla_desigual()
+    comunes = {"huella_confirmada": huella(tabla), "estado_frio_ultima_campana": "Adecuado"}
+
+    student = analizar(tabla, prueba_t="student", **comunes)
+    welch = analizar(tabla, prueba_t="welch", **comunes)
+
+    assert student.resumen.p_valor < 0.001 and student.resumen.correccion_aplicada is True
+    assert welch.resumen.p_valor > 0.05 and welch.resumen.correccion_aplicada is False
+    assert [a.codigo for a in welch.advertencias] == ["NO_SIGNIFICATIVO"]
+
+
+@pytest.mark.parametrize("valor", ["Welch", "t", "", None])
+def test_rf28_una_prueba_invalida_da_error_desde_analizar(valor):
+    with pytest.raises(ErrorDeEntrada) as error:
+        analizar(_tabla_12(), prueba_t=valor)
+
+    assert "welch" in str(error.value) and "student" in str(error.value)
+
+
+def test_rf26_prueba_t_no_agrega_advertencias():
+    assert _analizar_ok(prueba_t="student").advertencias == []
+
+
+def test_rf6_prueba_t_no_cambia_el_fc_ni_los_tamanos_de_grupo():
+    tabla = _tabla_12()
+
+    welch = _analizar_ok(tabla, prueba_t="welch").resumen
+    student = _analizar_ok(tabla, prueba_t="student").resumen
+
+    assert (welch.fc, welch.n_bajo_malla, welch.n_fuera_malla) == (student.fc, student.n_bajo_malla, student.n_fuera_malla)

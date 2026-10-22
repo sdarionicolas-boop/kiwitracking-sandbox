@@ -50,16 +50,65 @@ def test_rf6_p_valor_coincide_con_un_ejemplo_calculado_a_mano():
     assert factor.p_valor == pytest.approx(0.2879, abs=1e-3)
 
 
-def test_rf6_usa_la_prueba_t_de_student_con_varianzas_iguales_no_la_de_welch():
+def test_rf6_por_defecto_usa_la_prueba_de_welch_que_no_supone_varianzas_iguales():
     fuera = [1.0, 2.0, 3.0]
     bajo = [2.0, 4.0, 6.0, 8.0, 10.0]
-    student = stats.ttest_ind(fuera, bajo, equal_var=True).pvalue
     welch = stats.ttest_ind(fuera, bajo, equal_var=False).pvalue
-    assert student != pytest.approx(welch, abs=1e-3)  # el ejemplo distingue ambas pruebas
+    student = stats.ttest_ind(fuera, bajo, equal_var=True).pvalue
+    assert welch != pytest.approx(student, abs=1e-3)  # el ejemplo distingue ambas pruebas
 
     factor = calcular_factor(_tabla(fuera=fuera, bajo=bajo))
 
-    assert factor.p_valor == pytest.approx(student)
+    assert factor.p_valor == pytest.approx(welch)
+
+
+def test_rf6_con_prueba_t_student_usa_la_de_varianzas_iguales_como_en_v1_1():
+    fuera = [1.0, 2.0, 3.0]
+    bajo = [2.0, 4.0, 6.0, 8.0, 10.0]
+
+    factor = calcular_factor(_tabla(fuera=fuera, bajo=bajo), prueba_t="student")
+
+    assert factor.p_valor == pytest.approx(stats.ttest_ind(fuera, bajo, equal_var=True).pvalue)
+
+
+def test_rf6_welch_explicito_es_lo_mismo_que_el_valor_por_defecto():
+    tabla = _tabla(fuera=[0.59, 0.60, 0.61, 0.60], bajo=[0.44, 0.45, 0.46, 0.45])
+
+    assert calcular_factor(tabla, prueba_t="welch") == calcular_factor(tabla)
+
+
+def test_rf6_el_fc_y_los_tamanos_de_grupo_no_dependen_de_la_prueba():
+    tabla = _tabla(fuera=[0.59, 0.60, 0.61, 0.60], bajo=[0.44, 0.45, 0.46])
+
+    welch = calcular_factor(tabla, prueba_t="welch")
+    student = calcular_factor(tabla, prueba_t="student")
+
+    assert (welch.fc, welch.n_bajo, welch.n_fuera, welch.media_bajo) == (
+        student.fc, student.n_bajo, student.n_fuera, student.media_bajo,
+    )
+
+
+def test_rf6_con_varianzas_iguales_y_grupos_del_mismo_tamano_ambas_pruebas_coinciden():
+    tabla = _tabla(fuera=[1.0, 2.0, 3.0], bajo=[2.0, 3.0, 4.0])
+
+    assert calcular_factor(tabla, prueba_t="welch").p_valor == pytest.approx(
+        calcular_factor(tabla, prueba_t="student").p_valor
+    )
+
+
+def test_rf6_welch_calcula_el_p_valor_aunque_un_grupo_no_tenga_variacion():
+    # Un grupo con todos los valores iguales y el otro no: la prueba de Welch sigue siendo calculable.
+    factor = calcular_factor(_tabla(fuera=[0.60, 0.60, 0.60], bajo=[0.40, 0.50, 0.45]))
+
+    assert factor.p_valor is not None and 0 <= factor.p_valor <= 1
+
+
+@pytest.mark.parametrize("valor", ["Welch", "t", "", None])
+def test_rf28_calcular_factor_con_una_prueba_invalida_da_error_que_nombra_los_valores_permitidos(valor):
+    with pytest.raises(ErrorDeEntrada) as error:
+        calcular_factor(_tabla(fuera=[0.6, 0.6], bajo=[0.5, 0.5]), prueba_t=valor)
+
+    assert "welch" in str(error.value) and "student" in str(error.value)
 
 
 def test_rf6_grupos_muy_distintos_dan_p_valor_chico_y_grupos_parecidos_p_valor_alto():
@@ -465,3 +514,31 @@ def test_rf9_resolver_acepta_la_huella_de_referencia():
     r = resolver_correccion(filtrada, "auto", huella(completa), huella_referencia=huella(completa))
 
     assert r.aplicada is True
+
+
+# --- T31 (Cambio 3): prueba_t en resolver_correccion --------------------------------------
+
+
+def test_rf6_resolver_correccion_propaga_la_prueba_t_al_factor():
+    tabla = _tabla(fuera=[1.0, 2.0, 3.0, 2.5], bajo=[2.0, 4.0, 6.0, 8.0, 10.0])
+
+    welch = resolver_correccion(tabla, "forzar", huella(tabla), prueba_t="welch").factor.p_valor
+    student = resolver_correccion(tabla, "forzar", huella(tabla), prueba_t="student").factor.p_valor
+
+    assert welch == calcular_factor(tabla, prueba_t="welch").p_valor
+    assert student == calcular_factor(tabla, prueba_t="student").p_valor
+    assert welch != pytest.approx(student)
+
+
+def test_rf28_resolver_correccion_con_prueba_invalida_da_error():
+    tabla = _tabla_distinta()
+
+    with pytest.raises(ErrorDeEntrada, match="welch"):
+        resolver_correccion(tabla, "auto", huella(tabla), prueba_t="z")
+
+
+def test_rf28_validar_parametros_acepta_las_dos_pruebas():
+    from kiwitracking.validacion import validar_parametros
+
+    validar_parametros(prueba_t="welch")
+    validar_parametros(prueba_t="student")

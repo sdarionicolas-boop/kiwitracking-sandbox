@@ -29,6 +29,7 @@ class Resumen:
     p75_estabilidad: float | None = None
     huella: str | None = None
     escalar_std: bool = False  # True solo si se pidió y hubo corrección (si no, no hay nada que escalar)
+    prueba_t: str = "welch"
 
 
 @dataclass

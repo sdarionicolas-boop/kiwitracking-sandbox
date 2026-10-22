@@ -1,6 +1,6 @@
 # Validación — Spec 001
 
-Fecha de la corrida: 21/10/2026 (incluye los Cambios 1 y 2, secciones 7 y 8). Comando: `.venv\Scripts\python -m pytest -W error` → **331 tests, 331 pasan, 0 avisos**.
+Fecha de la corrida: 21/10/2026 (incluye los Cambios 1, 2 y 3, secciones 7 a 9). Comando: `.venv\Scripts\python -m pytest -W error` → **359 tests, 359 pasan, 0 avisos**.
 
 ## 1. Matriz de requisitos
 
@@ -13,7 +13,7 @@ Un test "cubre" un RF cuando su nombre lleva el número (`test_rfN_...`). Los n�
 | 3 | 7 | OK | test_io | UTF-8 (con BOM de Excel), error de codificación con nombre de archivo |
 | 4 | 13 | OK | test_io | Texto corrupto (`Ã`, `Â`, `â€`) solo en las 4 columnas de categorías |
 | 5 | 10 | OK | test_clasificacion, test_validacion | Dominio de `estado_frio_ultima_campana` (exacto, con tildes) |
-| 6 | 12 | OK | test_correccion | FC, p-valor de Student, tamaños de grupo, casos sin cálculo posible |
+| 6 | 23 | OK | test_analisis, test_correccion | FC y p-valor de la prueba t (Welch por defecto, Student opcional), tamaños de grupo, casos sin cálculo posible |
 | 7 | 9 | OK | test_analisis, test_correccion | Corrección en modo "auto": solo bajo malla, p < alfa estricto |
 | 8 | 9 | OK | test_analisis, test_correccion | Sin huella no se corrige en ningún modo |
 | 9 | 7 | OK | test_analisis, test_correccion | Huella que no coincide bloquea, incluso "forzar"; se compara con la tabla completa |
@@ -33,21 +33,22 @@ Un test "cubre" un RF cuando su nombre lleva el número (`test_rfN_...`). Los n�
 | 23 | 5 | OK | test_clasificacion | Ambiente, con los bordes en p33 y p66 |
 | 24 | 52 | OK | test_clasificacion | Recomendación con bordes estrictos (Intervenir `< p33`), estabilidad vacía e invariante Mantener ⊂ Alto Potencial, Intervenir ⊂ Limitante |
 | 25 | 9 | OK | test_analisis, test_clasificacion | Ajuste por frío deficiente y aviso si falta el dato |
-| 26 | 10 | OK | test_analisis, test_resultado | Resultado con tabla, resumen (incluido `escalar_std`) y advertencias en orden |
+| 26 | 12 | OK | test_analisis, test_resultado | Resultado con tabla, resumen (incluidos `escalar_std` y `prueba_t`) y advertencias en orden |
 | 27 | 15 | OK | test_analisis, test_clasificacion | `escalar_std`: estabilidad = `KVPI_mean` / `KVPI_std` solo donde hubo corrección; sin efecto si no se corrigió |
+| 28 | 10 | OK | test_analisis, test_correccion | `prueba_t` inválida: error con los valores permitidos (welch, student) |
 
-**Ninguno de los 27 RF queda sin test.** Los más delgados son RF-13 (2 tests) y RF-10 (3 tests); alcanzan para su comportamiento, pero son los primeros candidatos a reforzar. Los 12 tests `test_cambio1_*` y los 7 `test_cambio2_*` de `test_golden` verifican los cambios contra el lote real y no llevan número de RF en el nombre. RF-24 pasa de 9 a 52 tests porque el invariante se prueba en 40 tablas aleatorias con empates.
+**Ninguno de los 28 RF queda sin test.** Los más delgados son RF-13 (2 tests) y RF-10 (3 tests); alcanzan para su comportamiento, pero son los primeros candidatos a reforzar. Los 12 tests `test_cambio1_*`, los 7 `test_cambio2_*` y los 5 `test_cambio3_*` de `test_golden` verifican los cambios contra el lote real y no llevan número de RF en el nombre. RF-24 pasa de 9 a 52 tests porque el invariante se prueba en 40 tablas aleatorias con empates.
 
 ## 2. Criterios de finalización
 
 | # | Criterio | Estado | Evidencia |
 |---|---|---|---|
-| 1 | Todos los tests RF pasan | **Cumplido** | 331/331 |
+| 1 | Todos los tests RF pasan | **Cumplido** | 359/359 |
 | 2 | `KVPI_corregido`, `estabilidad` y umbrales con tolerancia 1e-6; ambiente y recomendación exactos | **Cumplido** | `test_golden`: diferencia máxima 1,1e-16 y 2,3e-13; las 159 plantas coinciden |
 | 3 | FC = 1,2262 ± 1e-3 | **Cumplido** | FC = 1,22617; p = 1,0e-26 |
 | 4 | El cruce con `malla_zona.geojson` da 53 plantas | **Cumplido** | 53, y coincide planta por planta con el notebook |
 | 5 | Sin ajuste de frío: 15 "Mantener" y 19 "Intervenir" | **Cumplido** | `test_golden` |
-| 6 | Cada RF tiene al menos un test | **Cumplido** | Sección 1 (27 RF) |
+| 6 | Cada RF tiene al menos un test | **Cumplido** | Sección 1 (28 RF) |
 | 7 | Demostración manual del flujo y revisión del mapa a mano | **Cumplido** | Flujo ejecutado de punta a punta sobre el lote real (sección 3). Revisión visual del mapa confirmada por la persona responsable el 21/10/2026: los puntos naranjas coinciden con la malla visible en la imagen. |
 
 ## 3. Demostración manual sobre el lote real
@@ -87,7 +88,7 @@ Fueron tomadas para poder avanzar y siguen como dudas abiertas en `spec.md`:
 
 1. ~~`estabilidad` con el `KVPI_std` sin corregir~~ **Resuelta con el Cambio 1** (sección 7): parámetro `escalar_std`. Queda decidir si pasa a ser el valor por defecto en una versión futura.
 2. ~~`<` frente a `≤` en p33~~ **Resuelta con el Cambio 2** (sección 8).
-3. Prueba t de Student frente a Welch.
+3. ~~Prueba t de Student frente a Welch~~ **Resuelta con el Cambio 3** (sección 9): Welch por defecto, Student con `prueba_t="student"`.
 4. `id` duplicados.
 5. FC publicado como 1,226 / 1,227 y calculado 1,2262.
 
@@ -110,6 +111,16 @@ Ciclo completo de SDD: duda detectada y medida → decisión (opción C: paráme
 - **Verificado en el lote real** para las 6 combinaciones de estado de frío y `escalar_std`.
 - **Sensibilidad:** volver al `≤` hace fallar 29 tests, todos en `test_clasificacion`; el golden no los detecta, y es lo esperado, porque el lote no tiene empates. La protección está en los tests con tablas chicas y aleatorias.
 
+## 9. Cambio 3: prueba t de Welch por defecto (RF-6, RF-26, RF-28)
+
+- **Problema:** la prueba de Student supone varianzas iguales y en el lote de referencia no se cumple: la varianza bajo malla es el 23 % de la de fuera de malla (Levene p < 0,001).
+- **Decisión (opción B):** `prueba_t="welch"` por defecto; `prueba_t="student"` reproduce v1.1. El resumen informa la prueba usada.
+- **Efecto en el lote de referencia:** ninguna decisión ni resultado cambia (tabla, FC, umbrales y recomendaciones idénticos con ambas pruebas). Cambia solo el p-valor del resumen: 5,9e-35 con Welch frente a 1,0e-26 con Student; ambos son "p < 0,001".
+- **Dónde sí importa:** en lotes con pocas plantas bajo malla. Ejemplo fijado en un test: 10 plantas fuera de malla casi sin variación y 3 bajo malla con mucha; Student da p = 0,0005 (corrige) y Welch p = 0,103 (no corrige).
+- **Sensibilidad:** tres mutaciones (default a Student, "student" que usa Welch, "welch" que usa Student) hacen fallar un test cada una. La primera versión de los tests no las detectaba: `pytest.approx` tiene una tolerancia absoluta por defecto de 1e-12 que da por iguales dos p-valores minúsculos. Se corrigió con `abs=0`.
+- **Aviso de scipy:** con un grupo de valores idénticos scipy emite "Precision loss…". Se verificó a mano que el p-valor es correcto y se silencia solo ese aviso.
+- **Pendiente fuera de este sandbox:** `docs/metodologia.md` (sección 5.1) del repositorio original dice "prueba t de Student" y debe actualizarse.
+
 ## Veredicto
 
-**La spec 001 está cumplida, con los Cambios 1 y 2 incorporados.** Los 27 requisitos tienen test, los 331 pasan, el núcleo reproduce el resultado publicado de las 159 plantas y la verificación visual del mapa fue confirmada por una persona. Las limitaciones de la sección 4 y las dudas de las secciones 5 y 6 siguen vigentes.
+**La spec 001 está cumplida, con los Cambios 1, 2 y 3 incorporados.** Los 28 requisitos tienen test, los 359 pasan, el núcleo reproduce el resultado publicado de las 159 plantas y la verificación visual del mapa fue confirmada por una persona. Las limitaciones de la sección 4 y las dudas de las secciones 5 y 6 siguen vigentes.

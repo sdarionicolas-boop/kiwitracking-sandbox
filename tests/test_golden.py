@@ -293,3 +293,61 @@ def test_cambio2_ninguna_planta_del_lote_cae_exactamente_en_p33_ni_en_p66_por_es
     assert not np.isclose(kvpi, resumen.p33, rtol=0, atol=1e-12).any()
     assert not np.isclose(kvpi, resumen.p66, rtol=0, atol=1e-12).any()
     assert sin_ajuste_de_frio.tabla["recomendacion"].value_counts().to_dict()["Intervenir"] == 19
+
+
+# --- T32 (Cambio 3): prueba t de Welch por defecto sobre el lote de referencia ---------------
+
+# Con p-valores tan chicos pytest.approx necesita abs=0: su tolerancia absoluta por defecto (1e-12) los daría por iguales.
+P_VALOR_STUDENT_V1_1 = 1.0256448140817872e-26  # el de la versión anterior (v1.1) sobre estas 159 plantas
+
+
+def _grupos(golden):
+    bajo = golden.loc[golden["bajo_malla"] == 1, "KVPI_mean"]
+    fuera = golden.loc[golden["bajo_malla"] == 0, "KVPI_mean"]
+    return fuera, bajo
+
+
+def test_cambio3_el_lote_de_referencia_incumple_el_supuesto_de_varianzas_iguales(golden):
+    # Motivo del cambio: la varianza bajo malla es menos de un tercio de la de fuera de malla.
+    from scipy import stats
+
+    fuera, bajo = _grupos(golden)
+
+    assert bajo.var() / fuera.var() < 0.3
+    assert stats.levene(fuera, bajo).pvalue < 0.001
+
+
+def test_cambio3_por_defecto_el_p_valor_del_lote_es_el_de_welch(con_frio_deficiente, golden):
+    from scipy import stats
+
+    fuera, bajo = _grupos(golden)
+    welch = stats.ttest_ind(fuera, bajo, equal_var=False).pvalue
+
+    assert con_frio_deficiente.resumen.prueba_t == "welch"
+    assert con_frio_deficiente.resumen.p_valor == pytest.approx(welch, rel=1e-9, abs=0)
+    assert con_frio_deficiente.resumen.p_valor == pytest.approx(5.86e-35, rel=1e-2, abs=0)
+
+
+def test_cambio3_con_student_se_reproduce_exactamente_el_p_valor_de_v1_1(entrada):
+    resultado = _analizar(entrada, "Deficiente", prueba_t="student")
+
+    assert resultado.resumen.prueba_t == "student"
+    assert resultado.resumen.p_valor == pytest.approx(P_VALOR_STUDENT_V1_1, rel=1e-9, abs=0)
+
+
+def test_cambio3_la_decision_y_todos_los_resultados_del_lote_son_identicos_con_ambas_pruebas(entrada):
+    welch = _analizar(entrada, "Adecuado", prueba_t="welch")
+    student = _analizar(entrada, "Adecuado", prueba_t="student")
+
+    assert welch.resumen.correccion_aplicada is True and student.resumen.correccion_aplicada is True
+    pd.testing.assert_frame_equal(welch.tabla, student.tabla)
+    assert welch.resumen.fc == student.resumen.fc
+    assert (welch.resumen.p33, welch.resumen.p66, welch.resumen.p75_estabilidad) == (
+        student.resumen.p33, student.resumen.p66, student.resumen.p75_estabilidad,
+    )
+    assert welch.advertencias == student.advertencias == []
+
+
+def test_cambio3_ambas_pruebas_dan_una_diferencia_altamente_significativa(entrada):
+    for prueba in ("welch", "student"):
+        assert _analizar(entrada, "Deficiente", prueba_t=prueba).resumen.p_valor < 0.001
