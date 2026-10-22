@@ -112,8 +112,8 @@ Reglas: una tarea a la vez, en orden. En cada una, primero se escribe el test y 
 
 ## Cierre
 
-- [ ] **T23. Validación final y demostración.**
-  - *Estado: matriz y demostración hechas (ver `validacion.md`). Pendiente: revisión visual del mapa por una persona.*
+- [x] **T23. Validación final y demostración.**
+  - *Estado: matriz y demostración hechas (ver `validacion.md`). Revisión visual del mapa confirmada por la persona responsable (21/10/2026): los puntos bajo malla coinciden con la malla visible en la imagen.*
   - Cubre: criterios de finalización 1, 6 y 7.
   - Hecho cuando: la suite completa pasa; existe una tabla que nombra, para cada uno de los 26 RF, el test que lo cubre y su resultado; y se ejecuta el flujo real sobre el lote (cruce, mapa, huella, análisis) y se revisa el mapa a mano.
 

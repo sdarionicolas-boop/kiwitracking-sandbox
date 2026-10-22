@@ -1,6 +1,6 @@
 # Spec 001 — Corrección por malla, clasificación de ambientes y recomendaciones
 
-Estado: IMPLEMENTADA, validada automáticamente (ver `validacion.md`); pendiente la revisión visual del mapa
+Estado: IMPLEMENTADA y VALIDADA (ver `validacion.md`)
 
 ## Contexto y objetivo
 KiwiTrackingIA calcula hoy, en notebooks, el tramo final de su metodología: corrige el KVPI de las plantas bajo malla de protección, clasifica ambientes y emite una recomendación de manejo por planta. Este tramo no tiene tests y depende de Colab. Esta spec define ese comportamiento como un núcleo Python verificable que reproduce los resultados publicados (v1.1, lote "El Abrojito", 159 plantas).

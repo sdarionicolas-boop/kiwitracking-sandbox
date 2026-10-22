@@ -47,7 +47,7 @@ Un test "cubre" un RF cuando su nombre lleva el número (`test_rfN_...`). Los n�
 | 4 | El cruce con `malla_zona.geojson` da 53 plantas | **Cumplido** | 53, y coincide planta por planta con el notebook |
 | 5 | Sin ajuste de frío: 15 "Mantener" y 19 "Intervenir" | **Cumplido** | `test_golden` |
 | 6 | Cada RF tiene al menos un test | **Cumplido** | Sección 1 |
-| 7 | Demostración manual del flujo y revisión del mapa a mano | **Parcial** | El flujo se ejecutó de punta a punta sobre el lote real (sección 3). **Falta la revisión visual del mapa por una persona.** |
+| 7 | Demostración manual del flujo y revisión del mapa a mano | **Cumplido** | Flujo ejecutado de punta a punta sobre el lote real (sección 3). Revisión visual del mapa confirmada por la persona responsable el 21/10/2026: los puntos naranjas coinciden con la malla visible en la imagen. |
 
 ## 3. Demostración manual sobre el lote real
 
@@ -91,4 +91,4 @@ Fueron tomadas para poder avanzar y siguen como dudas abiertas en `spec.md`:
 
 ## Veredicto
 
-**La spec 001 está cumplida en lo que se puede verificar automáticamente.** Los 26 requisitos tienen test, los 252 pasan y el núcleo reproduce el resultado publicado de las 159 plantas. Queda **una verificación humana**: abrir el mapa y confirmar que las plantas marcadas bajo malla coinciden con lo que se ve en la imagen. Hasta entonces, T23 no se da por cerrada.
+**La spec 001 está cumplida.** Los 26 requisitos tienen test, los 252 pasan, el núcleo reproduce el resultado publicado de las 159 plantas y la verificación visual del mapa fue confirmada por una persona. Las limitaciones de la sección 4 y las dudas de las secciones 5 y 6 siguen vigentes.
