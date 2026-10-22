@@ -1,6 +1,6 @@
 # Validación — Spec 001
 
-Fecha de la corrida: 22/10/2026 (incluye los Cambios 1 a 5, secciones 7 a 11). Comando: `.venv\Scripts\python -m pytest -W error` → **398 tests, 398 pasan, 0 avisos**.
+Fecha de la corrida: 22/10/2026 (incluye los Cambios 1 a 6, secciones 7 a 12). Comando: `.venv\Scripts\python -m pytest -W error` → **404 tests, 404 pasan, 0 avisos**.
 
 ## 1. Matriz de requisitos
 
@@ -27,26 +27,26 @@ Un test "cubre" un RF cuando su nombre lleva el número (`test_rfN_...`). Los n�
 | 17 | 14 | OK | test_io | Punto en polígono; lectura de GeoJSON |
 | 18 | 8 | OK | test_io | Sistema de coordenadas obligatorio y conversión entre sistemas |
 | 19 | 5 | OK | test_io | Advertencia si el cruce da 0 o todas las plantas |
-| 20 | 6 | OK | test_clasificacion | `estabilidad` = `KVPI_corregido` / `KVPI_std` (std sin corregir por defecto, como en v1.1) |
+| 20 | 6 | OK | test_clasificacion | `estabilidad` = `KVPI_corregido` / `KVPI_std`; por defecto el desvío se escala con el FC (`escalar_std`), con falso se reproduce v1.1 |
 | 21 | 5 | OK | test_analisis, test_clasificacion | `std = 0`: estabilidad vacía, aviso y "Observar" |
 | 22 | 6 | OK | test_clasificacion | p33, p66 y p75 con interpolación lineal |
 | 23 | 5 | OK | test_clasificacion | Ambiente, con los bordes en p33 y p66 |
 | 24 | 52 | OK | test_clasificacion | Recomendación con bordes estrictos (Intervenir `< p33`), estabilidad vacía e invariante Mantener ⊂ Alto Potencial, Intervenir ⊂ Limitante |
 | 25 | 9 | OK | test_analisis, test_clasificacion | Ajuste por frío deficiente y aviso si falta el dato |
 | 26 | 12 | OK | test_analisis, test_resultado | Resultado con tabla, resumen (incluidos `escalar_std` y `prueba_t`) y advertencias en orden |
-| 27 | 15 | OK | test_analisis, test_clasificacion | `escalar_std`: estabilidad = `KVPI_mean` / `KVPI_std` solo donde hubo corrección; sin efecto si no se corrigió |
+| 27 | 18 | OK | test_analisis, test_clasificacion | `escalar_std`: estabilidad = `KVPI_mean` / `KVPI_std` solo donde hubo corrección; sin efecto si no se corrigió |
 | 28 | 10 | OK | test_analisis, test_correccion | `prueba_t` inválida: error con los valores permitidos (welch, student) |
 | 29 | 15 | OK | test_analisis, test_validacion, test_visualizacion | Filas idénticas: se conserva una, aviso `ID_DUPLICADO` con la cantidad (análisis y mapa) |
 | 30 | 7 | OK | test_analisis, test_validacion, test_visualizacion | Mismo `id` con valores distintos: error que nombra hasta 10 `id` y cuántos más |
 | 31 | 8 | OK | test_analisis, test_validacion, test_visualizacion | `id` vacío (NaN, `None`, texto vacío): error con la cantidad, en el análisis y en el mapa |
 
-**Ninguno de los 31 RF queda sin test.** Los más delgados son RF-13 (2 tests) y RF-10 (3 tests); alcanzan para su comportamiento, pero son los primeros candidatos a reforzar. Los 12 tests `test_cambio1_*`, los 7 `test_cambio2_*`, los 5 `test_cambio3_*` y los 2 `test_cambio4_*` de `test_golden` verifican los cambios contra el lote real y no llevan número de RF en el nombre. RF-24 pasa de 9 a 52 tests porque el invariante se prueba en 40 tablas aleatorias con empates.
+**Ninguno de los 31 RF queda sin test.** Los más delgados son RF-13 (2 tests) y RF-10 (3 tests); alcanzan para su comportamiento, pero son los primeros candidatos a reforzar. Los 12 tests `test_cambio1_*`, los 7 `test_cambio2_*`, los 5 `test_cambio3_*`, los 2 `test_cambio4_*` y los 3 `test_cambio6_*` de `test_golden` verifican los cambios contra el lote real y no llevan número de RF en el nombre. RF-24 pasa de 9 a 52 tests porque el invariante se prueba en 40 tablas aleatorias con empates.
 
 ## 2. Criterios de finalización
 
 | # | Criterio | Estado | Evidencia |
 |---|---|---|---|
-| 1 | Todos los tests RF pasan | **Cumplido** | 398/398 |
+| 1 | Todos los tests RF pasan | **Cumplido** | 404/404 |
 | 2 | `KVPI_corregido`, `estabilidad` y umbrales con tolerancia 1e-6; ambiente y recomendación exactos | **Cumplido** | `test_golden`: diferencia máxima 1,1e-16 y 2,3e-13; las 159 plantas coinciden |
 | 3 | FC = 1,2262 ± 1e-3 | **Cumplido** | FC = 1,22617; p = 1,0e-26 |
 | 4 | El cruce con `malla_zona.geojson` da 53 plantas | **Cumplido** | 53, y coincide planta por planta con el notebook |
@@ -90,7 +90,7 @@ Fueron tomadas para poder avanzar y siguen como dudas abiertas en `spec.md`:
 
 ## 6. Dudas abiertas de método (te corresponden)
 
-1. ~~`estabilidad` con el `KVPI_std` sin corregir~~ **Resuelta con el Cambio 1** (sección 7): parámetro `escalar_std`. Queda decidir si pasa a ser el valor por defecto en una versión futura.
+1. ~~`estabilidad` con el `KVPI_std` sin corregir~~ **Resuelta con los Cambios 1 y 6** (secciones 7 y 12): parámetro `escalar_std`, verdadero por defecto desde el Cambio 6.
 2. ~~`<` frente a `≤` en p33~~ **Resuelta con el Cambio 2** (sección 8).
 3. ~~Prueba t de Student frente a Welch~~ **Resuelta con el Cambio 3** (sección 9): Welch por defecto, Student con `prueba_t="student"`.
 4. ~~`id` duplicados~~ **Resuelta con el Cambio 4** (sección 10): filas idénticas se descartan con aviso; conflictos son error.
@@ -142,6 +142,15 @@ Ciclo completo de SDD: duda detectada y medida → decisión (opción C: paráme
 - **Sensibilidad:** tres mutaciones (`id` deja de ser obligatoria, los vacíos no se detectan, el texto vacío no cuenta como vacío) hacen fallar 3, 7 y 1 tests.
 - **Residual:** la huella usa el texto del `id`, así que `5` y `5.0` darían huellas distintas si una tabla pasara de enteros a decimales. En el lote de referencia los `id` son enteros.
 
+## 12. Cambio 6: `escalar_std` verdadero por defecto (RF-20, RF-27)
+
+- **Decisión (22/10/2026):** `escalar_std` pasa a ser verdadero por defecto. Motivo: la corrección multiplica la media por el FC y, por consistencia matemática, el desvío debe escalar igual; sin eso, la estabilidad de las plantas bajo malla quedaba inflada un 22,6 %.
+- **Efecto en el lote de referencia (con el valor por defecto):** el p75 de estabilidad baja de 15,185 a 14,932; con frío adecuado hay 16 "Mantener" y 19 "Intervenir" (antes 15 y 19); cambian exactamente 5 recomendaciones (107 y 180 dejan "Intervenir"; 237 y 357 pasan a "Intervenir"; 215 pasa a "Mantener"); ambientes y `KVPI_corregido` no cambian. Con el frío "Deficiente" de la última campaña no hay "Mantener" y siguen 19 "Intervenir".
+- **Los resultados publicados (v1.1) se reproducen con `escalar_std=False`.** Los tests que describen esos resultados lo pasan de forma explícita; el helper del golden lo usa como valor por defecto del test, y el cambio de valor por defecto del paquete se verifica en los 3 tests `test_cambio6_*`.
+- **Cambio de comportamiento:** quien llame a `analizar()` sin indicar `escalar_std` obtiene ahora recomendaciones distintas en 5 de las 159 plantas respecto de v1.1. Para reproducir la tesis hay que pasar `escalar_std=False`.
+- **Sensibilidad:** volver el valor por defecto a falso en `calcular_estabilidad` hace fallar 1 test; en `analizar()`, 4; hacer que `escalar_std=False` ya no reproduzca v1.1, 17.
+- **Nota de proceso:** al empezar el cambio, `analizar()` ya tenía el valor por defecto en verdadero en el árbol de trabajo (sin commit), lo que dejó 11 tests en rojo antes de tocar el código. Se tomó como el estado deseado y se completó el cambio en `calcular_estabilidad`.
+
 ## Veredicto
 
-**La spec 001 está cumplida, con los Cambios 1 a 5 incorporados.** Los 31 requisitos tienen test, los 398 pasan, el núcleo reproduce el resultado publicado de las 159 plantas y la verificación visual del mapa fue confirmada por una persona. Las limitaciones de la sección 4 y las dudas de las secciones 5 y 6 siguen vigentes.
+**La spec 001 está cumplida, con los Cambios 1 a 6 incorporados.** Los 31 requisitos tienen test, los 404 pasan, el núcleo reproduce el resultado publicado de las 159 plantas y la verificación visual del mapa fue confirmada por una persona. Las limitaciones de la sección 4 y las dudas de las secciones 5 y 6 siguen vigentes.

@@ -24,7 +24,7 @@ def analizar(
     min_plantas_grupo: int = 2,
     p_ambiente: tuple[float, float] = (33, 66),
     p_estabilidad: float = 75,
-    escalar_std: bool = False,
+    escalar_std: bool = True,
     prueba_t: str = "welch",
 ) -> Resultado:
     """Corrige por malla, clasifica ambientes y recomienda (RF-1 a RF-26). No modifica la entrada.

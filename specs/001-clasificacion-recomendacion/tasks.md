@@ -198,3 +198,15 @@ Mismas reglas. El lote de referencia tiene todos sus `id`: nada de lo ya validad
   - Cubre: criterio 6 de la spec (cada RF con test).
   - Hecho cuando: `validacion.md` pasa a 31 requisitos (el pendiente de la columna `id` queda resuelto), el golden pasa sin tocarse, la suite completa pasa con `-W error` y el cambio queda commiteado.
 
+## Cambio 6: `escalar_std` verdadero por defecto (RF-20, RF-27)
+
+Mismas reglas. Los resultados publicados (v1.1) deben seguir reproduciéndose con `escalar_std=False`.
+
+- [x] **T38. Valor por defecto verdadero.**
+  - Cubre: RF-20, RF-27.
+  - Hecho cuando: `calcular_estabilidad` y `analizar()` escalan el desvío por defecto; con `escalar_std=False` se reproduce el comportamiento v1.1; sobre el lote de referencia, por defecto el p75 de estabilidad es 14,932, hay 16 "Mantener" y 19 "Intervenir" (sin ajuste de frío) y cambian exactamente las 5 recomendaciones medidas; los tests que describían resultados publicados pasan `escalar_std=False` de forma explícita.
+
+- [x] **T39. Documentación y validación del Cambio 6.**
+  - Cubre: criterio 6 de la spec.
+  - Hecho cuando: `validacion.md` registra el cambio y la reproducción de v1.1, la suite completa pasa con `-W error` y queda commiteado.
+

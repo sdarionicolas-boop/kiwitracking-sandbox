@@ -40,17 +40,17 @@ def test_rf20_usa_el_kvpi_corregido_y_no_el_kvpi_mean():
     tabla = _tabla(corregido=[0.60], std=[0.03])
     tabla["KVPI_mean"] = [0.30]  # la planta estaba bajo malla y se corrigió al doble
 
-    resultado, _ = calcular_estabilidad(tabla)
+    resultado, _ = calcular_estabilidad(tabla, escalar_std=False)
 
     assert resultado["estabilidad"].tolist() == pytest.approx([20.0])
 
 
 def test_rf20_el_std_no_se_corrige_se_usa_tal_cual():
-    # Comportamiento heredado del notebook (duda abierta): el KVPI_std no se escala con el FC.
+    # Con escalar_std falso se reproduce el análisis publicado (v1.1): el KVPI_std no se escala con el FC.
     tabla = _tabla(corregido=[0.60], std=[0.03])
     tabla["KVPI_mean"] = [0.50]  # FC = 1.2
 
-    resultado, _ = calcular_estabilidad(tabla)
+    resultado, _ = calcular_estabilidad(tabla, escalar_std=False)
 
     assert resultado["estabilidad"].iloc[0] == pytest.approx(0.60 / 0.03)
 
@@ -411,16 +411,6 @@ def _tabla_corregida(medias, corregidos, stds):
     )
 
 
-def test_rf27_escalar_std_es_falso_por_defecto_y_reproduce_el_comportamiento_anterior():
-    tabla = _tabla_corregida([0.50, 0.60], [0.60, 0.60], [0.03, 0.04])
-
-    por_defecto, _ = calcular_estabilidad(tabla)
-    explicito, _ = calcular_estabilidad(tabla, escalar_std=False)
-
-    pd.testing.assert_frame_equal(por_defecto, explicito)
-    assert por_defecto["estabilidad"].tolist() == pytest.approx([0.60 / 0.03, 0.60 / 0.04])
-
-
 def test_rf27_con_escalar_std_la_estabilidad_es_kvpi_mean_sobre_kvpi_std():
     # Planta bajo malla: media 0.50 corregida a 0.60 (FC = 1.2), std 0.03.
     tabla = _tabla_corregida([0.50], [0.60], [0.03])
@@ -444,7 +434,7 @@ def test_rf27_en_las_plantas_no_corregidas_escalar_std_no_cambia_nada():
     tabla = _tabla_corregida([0.60, 0.55], [0.60, 0.55], [0.03, 0.04])  # ninguna se corrigió
 
     escalado, _ = calcular_estabilidad(tabla, escalar_std=True)
-    normal, _ = calcular_estabilidad(tabla)
+    normal, _ = calcular_estabilidad(tabla, escalar_std=False)
 
     assert escalado["estabilidad"].tolist() == pytest.approx(normal["estabilidad"].tolist())
 
@@ -453,7 +443,7 @@ def test_rf27_solo_cambia_la_estabilidad_de_las_plantas_corregidas():
     tabla = _tabla_corregida([0.60, 0.50], [0.60, 0.60], [0.03, 0.03])  # la 2.ª se corrigió
 
     escalado, _ = calcular_estabilidad(tabla, escalar_std=True)
-    normal, _ = calcular_estabilidad(tabla)
+    normal, _ = calcular_estabilidad(tabla, escalar_std=False)
 
     assert escalado["estabilidad"].iloc[0] == pytest.approx(normal["estabilidad"].iloc[0])
     assert escalado["estabilidad"].iloc[1] < normal["estabilidad"].iloc[1]
@@ -475,3 +465,26 @@ def test_rf27_escalar_std_no_modifica_la_tabla_de_entrada():
     calcular_estabilidad(tabla, escalar_std=True)
 
     pd.testing.assert_frame_equal(tabla, copia)
+
+
+# --- T38 (Cambio 6): escalar_std es verdadero por defecto ------------------------------------
+
+
+def test_rf27_escalar_std_es_verdadero_por_defecto():
+    tabla = _tabla_corregida([0.50, 0.45], [0.60, 0.54], [0.03, 0.02])  # FC = 1.2 en ambas
+
+    por_defecto, _ = calcular_estabilidad(tabla)
+    explicito, _ = calcular_estabilidad(tabla, escalar_std=True)
+    sin_escalar, _ = calcular_estabilidad(tabla, escalar_std=False)
+
+    pd.testing.assert_frame_equal(por_defecto, explicito)
+    assert por_defecto["estabilidad"].tolist() == pytest.approx([0.50 / 0.03, 0.45 / 0.02])
+    assert por_defecto["estabilidad"].tolist() != pytest.approx(sin_escalar["estabilidad"].tolist())
+
+
+def test_rf27_con_escalar_std_falso_se_reproduce_el_comportamiento_publicado_v1_1():
+    tabla = _tabla_corregida([0.50], [0.60], [0.03])
+
+    resultado, _ = calcular_estabilidad(tabla, escalar_std=False)
+
+    assert resultado["estabilidad"].tolist() == pytest.approx([0.60 / 0.03])

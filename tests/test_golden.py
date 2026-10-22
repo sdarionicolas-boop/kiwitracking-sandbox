@@ -27,6 +27,8 @@ def entrada(golden):
 
 
 def _analizar(entrada, estado_frio, **kwargs):
+    """Análisis del lote. Reproduce los resultados publicados (v1.1): escalar_std falso, salvo que se indique."""
+    kwargs.setdefault("escalar_std", False)
     return analizar(
         entrada, huella_confirmada=huella(entrada), estado_frio_ultima_campana=estado_frio, **kwargs
     )
@@ -143,7 +145,9 @@ def test_criterio4_y_6_del_cruce_al_analisis_completo_reproduce_el_resultado_pub
     bajo_malla, _ = cruzar_con_malla(plantas, poligono, "EPSG:4326", crs_poligono)
     entrada = plantas.assign(bajo_malla=bajo_malla)
 
-    resultado = analizar(entrada, huella_confirmada=huella(entrada), estado_frio_ultima_campana="Deficiente")
+    resultado = analizar(
+        entrada, huella_confirmada=huella(entrada), estado_frio_ultima_campana="Deficiente", escalar_std=False
+    )
 
     resultado_por_id = resultado.tabla.set_index("id").loc[golden.index]
     assert resultado.resumen.fc == pytest.approx(1.2262, abs=1e-3)
@@ -167,7 +171,7 @@ def con_escalar_std(entrada):
     return _analizar(entrada, "Adecuado", escalar_std=True)
 
 
-def test_cambio1_con_el_valor_por_defecto_el_resultado_publicado_no_cambia(entrada, golden):
+def test_cambio1_con_escalar_std_falso_el_resultado_publicado_no_cambia(entrada, golden):
     explicito = _analizar(entrada, "Deficiente", escalar_std=False).tabla.set_index("id").loc[golden.index]
 
     assert explicito["recomendacion"].tolist() == golden["recomendacion"].tolist()
@@ -364,7 +368,9 @@ def test_cambio4_con_10_filas_repetidas_del_lote_el_resultado_es_el_del_lote_ori
     )
     assert len(repetidas) == 169
 
-    resultado = analizar(repetidas, huella_confirmada=huella(entrada), estado_frio_ultima_campana="Adecuado")
+    resultado = analizar(
+        repetidas, huella_confirmada=huella(entrada), estado_frio_ultima_campana="Adecuado", escalar_std=False
+    )
 
     pd.testing.assert_frame_equal(resultado.tabla, sin_ajuste_de_frio.tabla)
     assert resultado.resumen == sin_ajuste_de_frio.resumen
@@ -391,3 +397,32 @@ def test_cambio4_el_fc_es_1_2262_y_las_cifras_1_226_y_1_227_de_la_documentacion_
     assert round(0.541 / 0.441, 3) == 1.227
     # Por eso 1,227 se corre unas milésimas del valor calculado: no es el FC del software.
     assert abs(con_frio_deficiente.resumen.fc - 1.227) > 5e-4
+
+
+# --- T38 (Cambio 6): el valor por defecto sobre el lote de referencia ---------------------------
+
+
+def test_cambio6_por_defecto_el_lote_da_p75_14_932_y_16_mantener_sin_ajuste_de_frio(entrada):
+    resultado = analizar(entrada, huella_confirmada=huella(entrada), estado_frio_ultima_campana="Adecuado")
+
+    assert resultado.resumen.escalar_std is True
+    assert resultado.resumen.p75_estabilidad == pytest.approx(14.932, abs=1e-3)
+    recomendaciones = resultado.tabla["recomendacion"].value_counts().to_dict()
+    assert (recomendaciones["Mantener"], recomendaciones["Intervenir"]) == (16, 19)
+
+
+def test_cambio6_por_defecto_cambian_exactamente_las_5_recomendaciones_medidas_respecto_de_v1_1(entrada):
+    comunes = {"huella_confirmada": huella(entrada), "estado_frio_ultima_campana": "Adecuado"}
+    v1_1 = analizar(entrada, escalar_std=False, **comunes).tabla.set_index("id")["recomendacion"]
+    nuevo = analizar(entrada, **comunes).tabla.set_index("id")["recomendacion"]
+
+    cambiaron = {i: (v1_1[i], nuevo[i]) for i in v1_1.index if v1_1[i] != nuevo[i]}
+
+    assert cambiaron == CAMBIAN_CON_ESCALAR_STD
+
+
+def test_cambio6_v1_1_se_reproduce_con_escalar_std_falso(entrada, golden):
+    resultado = _analizar(entrada, "Deficiente", escalar_std=False).tabla.set_index("id").loc[golden.index]
+
+    assert resultado["recomendacion"].tolist() == golden["recomendacion"].tolist()
+    assert resultado["estabilidad"].tolist() == pytest.approx(golden["estabilidad"].tolist(), abs=1e-6)

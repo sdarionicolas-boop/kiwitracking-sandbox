@@ -192,20 +192,10 @@ def test_rf26_no_modifica_la_tabla_de_entrada():
 # --- T25 (Cambio 1): escalar_std en analizar() -------------------------------------------
 
 
-def test_rf27_por_defecto_no_se_escala_el_desvio_y_el_resumen_lo_dice():
-    resultado = _analizar_ok()
+def test_rf27_con_escalar_std_falso_el_resumen_dice_que_no_se_escalo_el_desvio():
+    resultado = _analizar_ok(escalar_std=False)
 
     assert resultado.resumen.escalar_std is False
-
-
-def test_rf27_escalar_std_por_defecto_equivale_a_pasarlo_en_falso():
-    tabla = _tabla_12()
-
-    por_defecto = _analizar_ok(tabla)
-    explicito = _analizar_ok(tabla, escalar_std=False)
-
-    pd.testing.assert_frame_equal(por_defecto.tabla, explicito.tabla)
-    assert por_defecto.resumen == explicito.resumen
 
 
 def test_rf27_con_escalar_std_la_estabilidad_de_todas_las_plantas_es_kvpi_mean_sobre_kvpi_std():
@@ -219,7 +209,7 @@ def test_rf27_con_escalar_std_la_estabilidad_de_todas_las_plantas_es_kvpi_mean_s
 
 def test_rf27_con_escalar_std_solo_baja_la_estabilidad_de_las_plantas_bajo_malla():
     tabla = _tabla_12()
-    normal = _analizar_ok(tabla).tabla
+    normal = _analizar_ok(tabla, escalar_std=False).tabla
     escalado = _analizar_ok(tabla, escalar_std=True).tabla
 
     bajo = tabla["bajo_malla"] == 1
@@ -229,7 +219,7 @@ def test_rf27_con_escalar_std_solo_baja_la_estabilidad_de_las_plantas_bajo_malla
 
 def test_rf27_escalar_std_no_cambia_el_kvpi_corregido_ni_los_ambientes():
     tabla = _tabla_12()
-    normal = _analizar_ok(tabla).tabla
+    normal = _analizar_ok(tabla, escalar_std=False).tabla
     escalado = _analizar_ok(tabla, escalar_std=True).tabla
 
     assert escalado["KVPI_corregido"].tolist() == normal["KVPI_corregido"].tolist()
@@ -247,7 +237,7 @@ def test_rf26_el_resumen_informa_que_se_escalo_el_desvio_y_sus_umbrales_son_los_
 def test_rf27_si_no_se_aplico_la_correccion_escalar_std_no_tiene_efecto_y_el_resumen_lo_refleja():
     tabla = _tabla_12()
 
-    sin_huella = analizar(tabla, estado_frio_ultima_campana="Adecuado")
+    sin_huella = analizar(tabla, estado_frio_ultima_campana="Adecuado", escalar_std=False)
     sin_huella_y_escalar = analizar(tabla, estado_frio_ultima_campana="Adecuado", escalar_std=True)
 
     pd.testing.assert_frame_equal(sin_huella.tabla, sin_huella_y_escalar.tabla)
@@ -259,7 +249,7 @@ def test_rf27_con_desactivar_escalar_std_no_tiene_efecto():
     tabla = _tabla_12()
     comunes = {"huella_confirmada": huella(tabla), "estado_frio_ultima_campana": "Adecuado", "correccion": "desactivar"}
 
-    normal = analizar(tabla, **comunes)
+    normal = analizar(tabla, escalar_std=False, **comunes)
     escalado = analizar(tabla, escalar_std=True, **comunes)
 
     pd.testing.assert_frame_equal(normal.tabla, escalado.tabla)
@@ -467,3 +457,36 @@ def test_rf31_dos_plantas_sin_id_dan_el_error_de_los_vacios_y_no_el_de_ids_repet
 
     assert "2 plantas sin id" in str(error.value)
     assert "repetidos" not in str(error.value)
+
+
+# --- T38 (Cambio 6): escalar_std es verdadero por defecto en analizar() -----------------------
+
+
+def test_rf27_por_defecto_analizar_escala_el_desvio_cuando_hay_correccion():
+    tabla = _tabla_12()
+
+    resultado = _analizar_ok(tabla)
+
+    assert resultado.resumen.escalar_std is True
+    assert resultado.tabla["estabilidad"].tolist() == pytest.approx((tabla["KVPI_mean"] / tabla["KVPI_std"]).tolist())
+
+
+def test_rf27_el_valor_por_defecto_es_lo_mismo_que_pasar_escalar_std_verdadero():
+    tabla = _tabla_12()
+
+    por_defecto = _analizar_ok(tabla)
+    explicito = _analizar_ok(tabla, escalar_std=True)
+
+    pd.testing.assert_frame_equal(por_defecto.tabla, explicito.tabla)
+    assert por_defecto.resumen == explicito.resumen
+
+
+def test_rf27_con_escalar_std_falso_analizar_reproduce_el_comportamiento_v1_1():
+    tabla = _tabla_12()
+
+    resultado = _analizar_ok(tabla, escalar_std=False)
+
+    assert resultado.resumen.escalar_std is False
+    assert resultado.tabla["estabilidad"].tolist() == pytest.approx(
+        (resultado.tabla["KVPI_corregido"] / tabla["KVPI_std"]).tolist()
+    )
