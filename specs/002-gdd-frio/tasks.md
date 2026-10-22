@@ -36,31 +36,31 @@ Reglas: una tarea a la vez, en orden. En cada una, primero se escribe el test y 
 
 ## Cálculo diario
 
-- [ ] **T2.7. GDD diario y horas de frío.** `clima_calculo.py`.
+- [x] **T2.7. GDD diario y horas de frío.** `clima_calculo.py`.
   - Cubre: RF-10, RF-11.
   - Hecho cuando: `GDD_diario = max(Tmedia − tbase, 0)` y las horas de coseno coinciden con valores calculados a mano (por ejemplo, `Tmax = 10`, `Tmin = 0`, umbral 7: 15,14 h); `Tmax ≤ umbral` da 24 h; `Tmin ≥ umbral` da 0 h; `Tmax = Tmin = umbral` da 24 h; el resultado coincide con una copia independiente de la función escalar del notebook sobre 1.000 pares aleatorios.
 
 ## Períodos
 
-- [ ] **T2.8. Temporadas, ventanas y días esperados.** `clima_periodos.py`.
+- [x] **T2.8. Temporadas, ventanas y días esperados.** `clima_periodos.py`.
   - Cubre: RF-12, RF-13.
   - Hecho cuando: la temporada empieza el 1 de `mes_inicio_temporada`, dura 12 meses y se etiqueta con el año de inicio; en modo "invierno" la ventana de cada año tiene 123 días de mayo a agosto; en modo "temporada" la ventana mezcla mayo–junio de un año con julio–agosto del anterior; el día esperado de una temporada que incluye el 29 de febrero es 366.
 
-- [ ] **T2.9. Cobertura, hueco máximo y período completo.**
+- [x] **T2.9. Cobertura, hueco máximo y período completo.**
   - Cubre: RF-14, RF-15, RF-16.
-  - Hecho cuando: por período salen días disponibles, esperados (incluidos los que caen fuera del rango de los datos), cobertura y hueco máximo; con 57 de 100 días y `cobertura_minima=0,57` el período es completo (comparación por división); `max_hueco_dias=None` desactiva el límite; un hueco de 8 días con límite 7 hace incompleto un período con cobertura 98 %; un período sin ningún día disponible no aparece.
+  - Hecho cuando: por período salen días disponibles, esperados (incluidos los que caen fuera del rango de los datos), cobertura y hueco máximo; con 7 de 25 días y `cobertura_minima=0,28` el período es completo (comparación por división; multiplicar daría incompleto por el redondeo de `0,28 × 25`); `max_hueco_dias=None` desactiva el límite; un hueco de 8 días con límite 7 hace incompleto un período con cobertura 98 %; un período sin ningún día disponible no aparece.
 
 ## Resultado
 
-- [ ] **T2.10. GDD por temporada.** `clima.py`.
+- [x] **T2.10. GDD por temporada.** `clima.py`.
   - Cubre: RF-17, RF-18.
   - Hecho cuando: `calcular_clima` devuelve la tabla `gdd` con `temporada`, `GDD_total` y las columnas de cobertura; el valor se calcula aunque el período sea incompleto; cada temporada incompleta genera `PERIODO_INCOMPLETO` con un mensaje que empieza con "GDD, temporada N" y trae cobertura y hueco.
 
-- [ ] **T2.11. Horas de frío y estado.**
+- [x] **T2.11. Horas de frío y estado.**
   - Cubre: RF-19, RF-20, RF-21.
   - Hecho cuando: la tabla `frio` trae `periodo`, `Horas_Frio` y `estado_frio`; el estado solo se asigna a ventanas completas ("Óptimo" ≥ 950, "Adecuado" ≥ 750, "Deficiente" en el resto) y sale de `ESTADOS_FRIO` de la spec 001; una ventana incompleta queda sin estado y avisa `PERIODO_INCOMPLETO` ("Frío, ventana N…"); una ventana completa con cobertura menor que 1 avisa `COBERTURA_PARCIAL`.
 
-- [ ] **T2.12. Salida completa y modo de reproducción.**
+- [x] **T2.12. Salida completa y modo de reproducción.**
   - Cubre: RF-26, RF-27.
   - Hecho cuando: `ResultadoClima` devuelve ambas tablas y las advertencias en orden (las de la entrada, luego por período cronológico, GDD antes que frío); con `ventana_frio="temporada"`, `cobertura_minima=0` y `max_hueco_dias=None`, una serie sintética de varios años reproduce que cada ventana suma mayo–junio de un año y julio–agosto del anterior, y que las temporadas de los bordes quedan clasificadas.
 
