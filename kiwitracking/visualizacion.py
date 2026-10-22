@@ -10,7 +10,7 @@ from shapely.geometry.base import BaseGeometry
 
 from kiwitracking.huella import huella
 from kiwitracking.resultado import Advertencia, ErrorDeEntrada
-from kiwitracking.validacion import descartar_duplicados
+from kiwitracking.validacion import descartar_duplicados, validar_ids
 
 COLOR_BAJO_MALLA = "#f39c12"
 COLOR_FUERA_DE_MALLA = "#27ae60"
@@ -52,6 +52,7 @@ def preparar_mapa(
     if faltan:
         raise ErrorDeEntrada(f"Faltan columnas para el mapa: {', '.join(faltan)}.")
 
+    validar_ids(plantas)  # RF-31
     plantas, advertencias = descartar_duplicados(plantas)  # RF-29, RF-30: igual que en el análisis
     x, y = plantas[columna_x], plantas[columna_y]
     sin_coordenadas = int((x.isna() | y.isna()).sum())

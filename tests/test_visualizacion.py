@@ -296,3 +296,24 @@ def test_rf29_el_html_tiene_un_marcador_por_planta_y_dice_que_se_descartaron_fil
     html = ruta.read_text(encoding="utf-8")
     assert html.count("L.circleMarker(") == 4
     assert "filas repetidas" in html
+
+
+# --- T36 (Cambio 5): id sin vacíos en el mapa de verificación ----------------------------
+
+
+def test_rf31_el_mapa_rechaza_una_planta_sin_id():
+    plantas = _plantas()
+    plantas["id"] = [10.0, float("nan"), 30.0, 40.0]
+
+    with pytest.raises(ErrorDeEntrada, match="1 planta sin id"):
+        preparar_mapa(plantas, POLIGONO)
+
+
+def test_rf31_dos_plantas_sin_id_en_el_mapa_no_se_confunden_con_ids_repetidos():
+    plantas = _plantas()
+    plantas["id"] = [float("nan"), float("nan"), 30.0, 40.0]
+
+    with pytest.raises(ErrorDeEntrada) as error:
+        preparar_mapa(plantas, POLIGONO)
+
+    assert "2 plantas sin id" in str(error.value)

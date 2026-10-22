@@ -186,3 +186,15 @@ Mismas reglas. Un lote sin ids repetidos (como el de referencia) no puede cambia
   - Cubre: criterios 2 a 5 (sin cambios) y la reproducción con duplicados.
   - Hecho cuando: los tests del golden pasan sin tocarse; el caso de las 10 filas repetidas da FC 1,22617 (no 1,22939); un test documenta de dónde salen 1,226 y 1,227; `validacion.md` registra el cambio (30 requisitos) y queda commiteado.
 
+## Cambio 5: `id` obligatoria y sin vacíos (RF-1, RF-31)
+
+Mismas reglas. El lote de referencia tiene todos sus `id`: nada de lo ya validado puede cambiar.
+
+- [x] **T36. `id` obligatoria y sin vacíos.**
+  - Cubre: RF-1, RF-31.
+  - Hecho cuando: una tabla sin columna `id` da `ErrorDeEntrada` que la nombra (y no `KeyError`), también junto a otras columnas faltantes; una o varias plantas con `id` vacío (NaN, `None` o texto vacío) dan `ErrorDeEntrada` con la cantidad ("1 planta sin id", "2 plantas sin id"), tanto en `analizar()` como en `preparar_mapa`; dos `id` vacíos ya no se confunden con "id repetidos"; los `id` de texto completos pasan.
+
+- [x] **T37. Validación del Cambio 5.**
+  - Cubre: criterio 6 de la spec (cada RF con test).
+  - Hecho cuando: `validacion.md` pasa a 31 requisitos (el pendiente de la columna `id` queda resuelto), el golden pasa sin tocarse, la suite completa pasa con `-W error` y el cambio queda commiteado.
+

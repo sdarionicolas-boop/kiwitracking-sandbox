@@ -438,3 +438,32 @@ def test_rf29_analizar_no_modifica_la_tabla_con_repetidas():
     analizar(repetida, huella_confirmada=huella(repetida))
 
     pd.testing.assert_frame_equal(repetida, copia)
+
+
+# --- T36 (Cambio 5): id obligatorio y sin vacíos en analizar() ---------------------------
+
+
+def test_rf1_analizar_sin_columna_id_da_error_de_entrada_y_no_key_error():
+    with pytest.raises(ErrorDeEntrada, match="id"):
+        analizar(_tabla_12().drop(columns=["id"]))
+
+
+def test_rf31_analizar_con_una_planta_sin_id_da_error_que_dice_cuantas():
+    tabla = _tabla_12()
+    tabla["id"] = tabla["id"].astype(float)
+    tabla.loc[9, "id"] = float("nan")  # una planta bajo malla sin id
+
+    with pytest.raises(ErrorDeEntrada, match="1 planta sin id"):
+        analizar(tabla)
+
+
+def test_rf31_dos_plantas_sin_id_dan_el_error_de_los_vacios_y_no_el_de_ids_repetidos():
+    tabla = _tabla_12()
+    tabla["id"] = tabla["id"].astype(float)
+    tabla.loc[[8, 9], "id"] = float("nan")
+
+    with pytest.raises(ErrorDeEntrada) as error:
+        analizar(tabla)
+
+    assert "2 plantas sin id" in str(error.value)
+    assert "repetidos" not in str(error.value)

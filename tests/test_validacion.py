@@ -291,3 +291,54 @@ def test_rf29_no_modifica_la_tabla_de_entrada():
     descartar_duplicados(entrada)
 
     pd.testing.assert_frame_equal(entrada, copia)
+
+
+# --- T36 (Cambio 5): la columna id es obligatoria y no puede tener vacíos ----------------
+
+
+def test_rf1_falta_la_columna_id_da_error_que_la_nombra_y_no_un_key_error():
+    tabla = _tabla_valida().drop(columns=["id"])
+
+    with pytest.raises(ErrorDeEntrada, match="id"):
+        validar_tabla(tabla)
+
+
+def test_rf1_si_faltan_id_y_otra_columna_el_error_nombra_las_dos():
+    tabla = _tabla_valida().drop(columns=["id", "KVPI_std"])
+
+    with pytest.raises(ErrorDeEntrada) as error:
+        validar_tabla(tabla)
+
+    assert "id" in str(error.value) and "KVPI_std" in str(error.value)
+
+
+def test_rf31_una_planta_con_id_vacio_da_error_que_dice_cuantas_son():
+    tabla = _tabla_valida()
+    tabla["id"] = [1.0, float("nan"), 3.0]
+
+    with pytest.raises(ErrorDeEntrada, match="1 planta sin id"):
+        validar_tabla(tabla)
+
+
+def test_rf31_varias_plantas_sin_id_se_cuentan():
+    tabla = _tabla_valida()
+    tabla["id"] = [float("nan"), float("nan"), 3.0]
+
+    with pytest.raises(ErrorDeEntrada, match="2 plantas sin id"):
+        validar_tabla(tabla)
+
+
+def test_rf31_un_id_vacio_escrito_como_none_o_texto_vacio_tambien_se_detecta():
+    for vacio in (None, ""):
+        tabla = _tabla_valida()
+        tabla["id"] = ["a", vacio, "c"]
+
+        with pytest.raises(ErrorDeEntrada, match="sin id"):
+            validar_tabla(tabla)
+
+
+def test_rf31_ids_de_texto_completos_no_dan_error():
+    tabla = _tabla_valida()
+    tabla["id"] = ["p-01", "p-02", "p-03"]
+
+    validar_tabla(tabla)

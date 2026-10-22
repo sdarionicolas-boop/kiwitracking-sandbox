@@ -4,7 +4,7 @@ import pandas as pd
 
 from kiwitracking.resultado import Advertencia, ErrorDeEntrada
 
-COLUMNAS_OBLIGATORIAS = ("KVPI_mean", "KVPI_std", "bajo_malla")
+COLUMNAS_OBLIGATORIAS = ("id", "KVPI_mean", "KVPI_std", "bajo_malla")
 MODOS_CORRECCION = ("auto", "forzar", "desactivar")
 ESTADOS_FRIO = ("Deficiente", "Adecuado", "Óptimo")
 PRUEBAS_T = ("welch", "student")
@@ -36,11 +36,22 @@ def validar_tabla(tabla: pd.DataFrame) -> None:
     if tabla.empty:
         raise ErrorDeEntrada("La tabla está vacía: no hay plantas para analizar.")
 
+    validar_ids(tabla)
+
     if not pd.api.types.is_numeric_dtype(tabla["KVPI_mean"]):
         raise ErrorDeEntrada("La columna KVPI_mean contiene valores no numéricos.")
 
     if not tabla["bajo_malla"].isin([0, 1]).all():
         raise ErrorDeEntrada("La columna bajo_malla solo admite los valores 0 y 1 (sin vacíos).")
+
+
+def validar_ids(tabla: pd.DataFrame) -> None:
+    """Toda planta necesita un `id` (RF-31): NaN, None y texto vacío cuentan como vacíos."""
+    ids = tabla["id"]
+    vacios = int((ids.isna() | (ids.astype(str).str.strip() == "")).sum())
+    if vacios:
+        planta = "planta" if vacios == 1 else "plantas"
+        raise ErrorDeEntrada(f"{vacios} {planta} sin id: toda planta necesita un id.")
 
 
 def excluir_sin_kvpi(tabla: pd.DataFrame) -> tuple[pd.DataFrame, list[Advertencia]]:

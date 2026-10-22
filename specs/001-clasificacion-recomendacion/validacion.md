@@ -1,6 +1,6 @@
 # Validación — Spec 001
 
-Fecha de la corrida: 21/10/2026 (incluye los Cambios 1 a 4, secciones 7 a 10). Comando: `.venv\Scripts\python -m pytest -W error` → **387 tests, 387 pasan, 0 avisos**.
+Fecha de la corrida: 22/10/2026 (incluye los Cambios 1 a 5, secciones 7 a 11). Comando: `.venv\Scripts\python -m pytest -W error` → **398 tests, 398 pasan, 0 avisos**.
 
 ## 1. Matriz de requisitos
 
@@ -8,7 +8,7 @@ Un test "cubre" un RF cuando su nombre lleva el número (`test_rfN_...`). Los n�
 
 | RF | Tests | Resultado | Archivos | Qué comprueba |
 |---|---|---|---|---|
-| 1 | 11 | OK | test_analisis, test_validacion | Columnas obligatorias, tabla vacía, KVPI no numérico, `bajo_malla` ∈ {0,1} |
+| 1 | 14 | OK | test_analisis, test_validacion | Columnas obligatorias (`id`, `KVPI_mean`, `KVPI_std`, `bajo_malla`), tabla vacía, KVPI no numérico, `bajo_malla` ∈ {0,1} |
 | 2 | 6 | OK | test_analisis, test_validacion | Exclusión de plantas sin KVPI con advertencia y sin tocar la entrada |
 | 3 | 7 | OK | test_io | UTF-8 (con BOM de Excel), error de codificación con nombre de archivo |
 | 4 | 13 | OK | test_io | Texto corrupto (`Ã`, `Â`, `â€`) solo en las 4 columnas de categorías |
@@ -38,19 +38,20 @@ Un test "cubre" un RF cuando su nombre lleva el número (`test_rfN_...`). Los n�
 | 28 | 10 | OK | test_analisis, test_correccion | `prueba_t` inválida: error con los valores permitidos (welch, student) |
 | 29 | 15 | OK | test_analisis, test_validacion, test_visualizacion | Filas idénticas: se conserva una, aviso `ID_DUPLICADO` con la cantidad (análisis y mapa) |
 | 30 | 7 | OK | test_analisis, test_validacion, test_visualizacion | Mismo `id` con valores distintos: error que nombra hasta 10 `id` y cuántos más |
+| 31 | 8 | OK | test_analisis, test_validacion, test_visualizacion | `id` vacío (NaN, `None`, texto vacío): error con la cantidad, en el análisis y en el mapa |
 
-**Ninguno de los 30 RF queda sin test.** Los más delgados son RF-13 (2 tests) y RF-10 (3 tests); alcanzan para su comportamiento, pero son los primeros candidatos a reforzar. Los 12 tests `test_cambio1_*`, los 7 `test_cambio2_*`, los 5 `test_cambio3_*` y los 2 `test_cambio4_*` de `test_golden` verifican los cambios contra el lote real y no llevan número de RF en el nombre. RF-24 pasa de 9 a 52 tests porque el invariante se prueba en 40 tablas aleatorias con empates.
+**Ninguno de los 31 RF queda sin test.** Los más delgados son RF-13 (2 tests) y RF-10 (3 tests); alcanzan para su comportamiento, pero son los primeros candidatos a reforzar. Los 12 tests `test_cambio1_*`, los 7 `test_cambio2_*`, los 5 `test_cambio3_*` y los 2 `test_cambio4_*` de `test_golden` verifican los cambios contra el lote real y no llevan número de RF en el nombre. RF-24 pasa de 9 a 52 tests porque el invariante se prueba en 40 tablas aleatorias con empates.
 
 ## 2. Criterios de finalización
 
 | # | Criterio | Estado | Evidencia |
 |---|---|---|---|
-| 1 | Todos los tests RF pasan | **Cumplido** | 387/387 |
+| 1 | Todos los tests RF pasan | **Cumplido** | 398/398 |
 | 2 | `KVPI_corregido`, `estabilidad` y umbrales con tolerancia 1e-6; ambiente y recomendación exactos | **Cumplido** | `test_golden`: diferencia máxima 1,1e-16 y 2,3e-13; las 159 plantas coinciden |
 | 3 | FC = 1,2262 ± 1e-3 | **Cumplido** | FC = 1,22617; p = 1,0e-26 |
 | 4 | El cruce con `malla_zona.geojson` da 53 plantas | **Cumplido** | 53, y coincide planta por planta con el notebook |
 | 5 | Sin ajuste de frío: 15 "Mantener" y 19 "Intervenir" | **Cumplido** | `test_golden` |
-| 6 | Cada RF tiene al menos un test | **Cumplido** | Sección 1 (30 RF) |
+| 6 | Cada RF tiene al menos un test | **Cumplido** | Sección 1 (31 RF) |
 | 7 | Demostración manual del flujo y revisión del mapa a mano | **Cumplido** | Flujo ejecutado de punta a punta sobre el lote real (sección 3). Revisión visual del mapa confirmada por la persona responsable el 21/10/2026: los puntos naranjas coinciden con la malla visible en la imagen. |
 
 ## 3. Demostración manual sobre el lote real
@@ -86,7 +87,6 @@ Fueron tomadas para poder avanzar y siguen como dudas abiertas en `spec.md`:
 - Sin ninguna planta con KVPI válido: error.
 - El borde del polígono cuenta como "dentro".
 - "Fila idéntica" (RF-29) es igual en todas las columnas de la tabla, no solo en las obligatorias; los vacíos cuentan como iguales entre sí.
-- Una tabla sin columna `id` sigue dando `KeyError` en lugar de `ErrorDeEntrada` (RF-1 no la lista, aunque la sección Entradas sí). Pendiente de decidir.
 
 ## 6. Dudas abiertas de método (te corresponden)
 
@@ -134,6 +134,14 @@ Ciclo completo de SDD: duda detectada y medida → decisión (opción C: paráme
 - **FC 1,226 / 1,227:** no era un error del software. El FC exacto es 1,226172; 1,226 es ese valor redondeado a 3 decimales y 1,227 sale de dividir las medias ya redondeadas (0,541 / 0,441). Un test lo documenta. Se cita como 1,2262.
 - **Pendiente fuera de este sandbox:** unificar el FC en el README, `docs/metodologia.md` y `metadata_ejecucion.txt`.
 
+## 11. Cambio 5: `id` obligatoria y sin vacíos (RF-1, RF-31)
+
+- **Problema:** la spec listaba `id` como entrada pero RF-1 no la exigía. Una tabla sin `id` terminaba en un `KeyError` interno; una planta con `id` vacío pasaba sin aviso (y entraba a la huella como el texto "nan"); dos plantas con `id` vacío daban el error confuso "id repetidos: nan".
+- **Decisión:** `id` pasa a ser columna obligatoria (RF-1) y un `id` vacío (NaN, `None` o texto vacío) es un error que dice cuántas plantas lo tienen (RF-31). Vale para el análisis y para el mapa.
+- **Efecto en el lote de referencia:** ninguno (todos sus `id` están completos); los tests del golden pasaron sin tocarse.
+- **Sensibilidad:** tres mutaciones (`id` deja de ser obligatoria, los vacíos no se detectan, el texto vacío no cuenta como vacío) hacen fallar 3, 7 y 1 tests.
+- **Residual:** la huella usa el texto del `id`, así que `5` y `5.0` darían huellas distintas si una tabla pasara de enteros a decimales. En el lote de referencia los `id` son enteros.
+
 ## Veredicto
 
-**La spec 001 está cumplida, con los Cambios 1 a 4 incorporados.** Los 30 requisitos tienen test, los 387 pasan, el núcleo reproduce el resultado publicado de las 159 plantas y la verificación visual del mapa fue confirmada por una persona. Las limitaciones de la sección 4 y las dudas de las secciones 5 y 6 siguen vigentes.
+**La spec 001 está cumplida, con los Cambios 1 a 5 incorporados.** Los 31 requisitos tienen test, los 398 pasan, el núcleo reproduce el resultado publicado de las 159 plantas y la verificación visual del mapa fue confirmada por una persona. Las limitaciones de la sección 4 y las dudas de las secciones 5 y 6 siguen vigentes.
