@@ -84,7 +84,7 @@ Reglas: una tarea a la vez, en orden. En cada una, primero se escribe el test y 
   - Cubre: RF-27, criterio 2.
   - Hecho cuando: con `ventana_frio="temporada"`, `cobertura_minima=0` y `max_hueco_dias=None`, el GDD por temporada (2018 a 2025) coincide con `gdd_por_campana.csv` con diferencia menor que 1e-9, y las horas de frío (331,7 / 921,5 / 949,8 / 1.115,2 / 839,3 / 1.009,0 / 1.036,1 / 439,2) y sus estados coinciden con `horas_frio_por_campana.csv` con tolerancia 1e-6.
 
-- [ ] **T2.17. Invierno por defecto (criterios 3 y 4).**
+- [x] **T2.17. Invierno por defecto (criterios 3 y 4).**
   - Cubre: RF-19, RF-20, criterios 3 y 4.
   - Hecho cuando: las horas son 956,5 / 853,5 / 925,0 / 1.090,4 / 853,5 / 1.128,8 para 2019 a 2024 (123 días) y 834,2 para 2025 (119 de 123 días), con tolerancia 0,05 h; los estados son "Óptimo" en 2019, 2022 y 2024 y "Adecuado" en 2020, 2021, 2023 y 2025; ninguno es "Deficiente".
 
