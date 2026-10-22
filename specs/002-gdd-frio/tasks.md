@@ -80,7 +80,7 @@ Reglas: una tarea a la vez, en orden. En cada una, primero se escribe el test y 
 
 ## Verificación con datos reales *(requieren T2.0)*
 
-- [ ] **T2.16. Reproducir el notebook (criterio 2).** `test_clima_golden.py`.
+- [x] **T2.16. Reproducir el notebook (criterio 2).** `test_clima_golden.py`.
   - Cubre: RF-27, criterio 2.
   - Hecho cuando: con `ventana_frio="temporada"`, `cobertura_minima=0` y `max_hueco_dias=None`, el GDD por temporada (2018 a 2025) coincide con `gdd_por_campana.csv` con diferencia menor que 1e-9, y las horas de frío (331,7 / 921,5 / 949,8 / 1.115,2 / 839,3 / 1.009,0 / 1.036,1 / 439,2) y sus estados coinciden con `horas_frio_por_campana.csv` con tolerancia 1e-6.
 
