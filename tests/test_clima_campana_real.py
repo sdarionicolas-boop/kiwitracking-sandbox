@@ -1,6 +1,6 @@
 """Campaña, completitud del GDD e integración con `analizar()` sobre el clima y el lote reales (spec 002, criterios 5 a 7).
 
-Las horas de 2024 y 2025 dependen de días no verificados contra INTA: ver `AGENTS.md`.
+Las horas de 2024 y 2025 dependen de días interpolados, no medidos por INTA: ver `AGENTS.md`.
 """
 
 from pathlib import Path

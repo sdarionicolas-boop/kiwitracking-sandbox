@@ -34,10 +34,12 @@ versión vieja y descartada: no usar.
   (id A872819), comparados con dos descargas: el Excel `EEA_Miramar.xls` (2.303 días, hasta 2025-07-28) y
   una descarga posterior hasta 2026-10-21 que confirmó los 243 días siguientes (22/10/2026): 0 diferencias en
   Tmax y Tmin.
-- **58 días (`no_verificado`) NO están verificados:** INTA los tiene vacíos en ambas descargas (entre
-  2019-09-24 y 2025-05-12). 35 de ellos son claramente valores derivados (2 decimales o más: promedios o
-  interpolaciones); los otros 23 tienen 1 decimal, como INTA, pero no se pudo comprobar su origen. Solo
-  otra fuente de datos, o quien armó el archivo, puede resolverlos.
+- **58 días (`interpolado`) NO son mediciones:** INTA los tiene vacíos en ambas descargas (entre
+  2019-09-24 y 2025-05-12). **Son valores interpolados, no mediciones:** SIGA muestra Tmax y Tmin vacíos en
+  esos días (revisado a mano el 22/10/2026 para agosto de 2024) y 37 de los 58 coinciden exactamente con
+  la interpolación lineal entre los días vecinos de INTA; el resto también sigue una recta, pero con otros
+  extremos (por ejemplo, abril-mayo de 2025). El hueco es definitivo: no hay dato de la estación que lo
+  llene.
 - **El invierno 2024 depende de esos días** (26 días de mayo a agosto; también 4 en 2023 y 8 en 2025). Sin
   ellos, 2024 y 2025 no son clasificables (2025 por un hueco de 12 días, aunque su cobertura es 0,902) y la
   última campaña clasificable pasa a ser la 2023. Lo prueba `tests/test_clima_procedencia.py`: no leer las

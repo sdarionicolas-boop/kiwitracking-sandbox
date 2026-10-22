@@ -6,7 +6,7 @@ Reglas: una tarea a la vez, en orden. En cada una, primero se escribe el test y 
 
 - [x] **T2.0. Resolver la procedencia del clima y copiar el archivo.** *(Necesita una decisión tuya; bloquea T2.16 a T2.18.)*
   - Cubre: hallazgo C15; prerrequisito de los criterios 2 a 7.
-  - Hecho cuando: se sabe de dónde viene el archivo diario y bajo qué condiciones se puede usar; `tests/golden/clima_diario.csv` existe con `date`, `Tmax`, `Tmin` y una columna `origen` (2.604 filas, de `2019-01-01` a `2026-03-28`, con las 40 fechas faltantes sin rellenar), y la procedencia queda anotada en `AGENTS.md`. *Resuelta el 22/10/2026: 2.303 días idénticos al Excel de INTA y 301 no verificados; decisión de copiar el archivo completo marcando el origen de cada día.* Mientras no se haga, los tests de T2.16 a T2.18 se saltan con un motivo explícito.
+  - Hecho cuando: se sabe de dónde viene el archivo diario y bajo qué condiciones se puede usar; `tests/golden/clima_diario.csv` existe con `date`, `Tmax`, `Tmin` y una columna `origen` (2.604 filas, de `2019-01-01` a `2026-03-28`, con las 40 fechas faltantes sin rellenar), y la procedencia queda anotada en `AGENTS.md`. *Resuelta el 22/10/2026: 2.303 días idénticos al Excel de INTA y 301 no verificados; decisión de copiar el archivo completo marcando el origen de cada día. Actualizado el mismo día con una descarga posterior de INTA: 2.546 `INTA_verificado` y 58 `interpolado` (INTA los tiene vacíos; son interpolaciones lineales).* Mientras no se haga, los tests de T2.16 a T2.18 se saltan con un motivo explícito.
 
 ## Parámetros y entrada
 
