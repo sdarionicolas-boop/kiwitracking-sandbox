@@ -1,6 +1,6 @@
 """Reproducción de los resultados del notebook 03 con el clima real del lote de referencia (spec 002, criterio 2).
 
-El clima es `tests/golden/clima_diario.csv` (2.604 días; 301 de ellos no están verificados contra INTA: ver
+El clima es `tests/golden/clima_diario.csv` (2.604 días; 58 de ellos no están verificados contra INTA: ver
 `AGENTS.md` y `test_clima_procedencia.py`). Los resultados de referencia son `gdd_por_campana.csv` y
 `horas_frio_por_campana.csv`, producidos por el notebook con ese mismo archivo.
 """

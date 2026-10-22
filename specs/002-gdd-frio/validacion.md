@@ -68,6 +68,6 @@ En T2.0 a T2.18 se hicieron además mutaciones por tarea (cálculo diario, etiqu
 
 ## 4. Limitaciones y dudas abiertas
 
-- **Procedencia del clima.** 301 de los 2.604 días de `clima_diario.csv` no están verificados contra el Excel de INTA, y los inviernos 2024 y 2025 dependen de ellos (26 y 42 días). Sin esos días ninguno de los dos es clasificable y la última campaña pasa a ser 2023. Siguen sin verificarse su origen y las condiciones de uso de los datos de INTA. Ver `AGENTS.md` y `test_clima_procedencia.py`.
+- **Procedencia del clima.** 58 de los 2.604 días de `clima_diario.csv` no están verificados contra INTA (que los tiene vacíos; 243 más se confirmaron con una descarga posterior el 22/10/2026), y el invierno 2024 depende de ellos (26 días; también 4 en 2023 y 8 en 2025). Sin esos días ni 2024 ni 2025 son clasificables y la última campaña pasa a ser 2023. Siguen sin verificarse su origen y las condiciones de uso de los datos de INTA. Ver `AGENTS.md` y `test_clima_procedencia.py`.
 - **Hallazgos medios y menores de la clarificación.** Quedan como dudas abiertas, con el comportamiento provisional de la sección 8 del plan.
 - **Documentación del repo original.** Pendiente (lo edita la persona responsable, no el sandbox): FC citado como 1,2262, Welch por defecto y duplicados.
