@@ -1,0 +1,88 @@
+======================================================================
+IVP-KIWI - PRODUCTO FINAL UNIFICADO
+======================================================================
+
+METADATOS DE EJECUCIÓN
+--------------------------------------------------
+Fecha y hora: 2026-06-20 19:35:18
+Versión: 1.1
+Análisis: IVP-KIWI - Producto Final Unificado (con corrección por mallas)
+
+CORRECCIÓN POR EFECTO DE MALLAS
+--------------------------------------------------
+Factor de corrección aplicado: 1.226
+KVPI bajo malla (original): 0.441
+KVPI bajo malla (corregido): 0.541
+Justificación: El sombreo del 15-17% de las mallas monofilamento
+reduce el NDVI y subestima el KVPI. El factor se calculó como
+KVPI_fuera / KVPI_bajo = 0.541 / 0.441 = 1.227
+
+DATOS DE ENTRADA
+--------------------------------------------------
+KVPI: 954 registros
+Plantas analizadas: 159
+Puntos productivos: 159
+Datos climáticos: 2604 registros diarios
+NDVI: 73 registros mensuales
+Período analizado: 2019-01-01 a 2025-07-01
+
+MALLAS PROTECTORAS
+--------------------------------------------------
+• Instaladas en diciembre de 2018
+• Plantas bajo malla monofilamento: 53 de 159
+• El KVPI (2019-2025) refleja condiciones con mallas presentes
+• Se aplicó factor de corrección 1.227 para compensar sombreo
+
+RESULTADOS PRINCIPALES (POST-CORRECCIÓN)
+--------------------------------------------------
+KVPI medio global corregido: 0.541 ± 0.047
+Rango KVPI corregido: 0.386 - 0.616
+
+Ambientes productivos (corregido):
+  • Alto Potencial: 54 plantas
+  • Limitante: 53 plantas
+  • Transicional: 52 plantas
+  Umbrales: Bajo ≤ 0.536 | Medio 0.536-0.564 | Alto ≥ 0.564
+
+Horas de Frío (mayo-agosto):
+  • Promedio: 830 horas
+  • Requerimiento Hayward: 950–1150 horas (óptimo) | ≥750 h aceptable
+  • Temporada 2018: 332 h → Deficiente
+  • Temporada 2019: 921 h → Adecuado
+  • Temporada 2020: 950 h → Adecuado
+  • Temporada 2021: 1115 h → Óptimo
+  • Temporada 2022: 839 h → Adecuado
+  • Temporada 2023: 1009 h → Óptimo
+  • Temporada 2024: 1036 h → Óptimo
+  • Temporada 2025: 439 h → Deficiente
+
+GDD (Tbase=10°C):
+  • Total período: 14445 °C día
+  • Promedio por campaña: 1806 °C día
+
+Alertas climáticas (Isolation Forest):
+  • Meses anómalos: 8 / 73 (11.0%)
+  • Mes más anómalo: March 2025
+
+Recomendaciones (post-corrección):
+  • Observar: 140 plantas
+  • Intervenir: 19 plantas
+  Umbral de estabilidad (p75): 15.2
+
+ARCHIVOS GENERADOS
+--------------------------------------------------
+• /content/drive/MyDrive/KiwiTrackingIA/IVP_Kiwi_Producto_Final/IVP_Kiwi_Producto_Final.html - Mapa interactivo unificado
+• /content/drive/MyDrive/KiwiTrackingIA/IVP_Kiwi_Producto_Final/datos_plantas_completos.csv - Datos por planta
+• /content/drive/MyDrive/KiwiTrackingIA/IVP_Kiwi_Producto_Final/gdd_por_campana.csv - GDD por campaña
+• /content/drive/MyDrive/KiwiTrackingIA/IVP_Kiwi_Producto_Final/horas_frio_por_campana.csv - Horas de frío
+• /content/drive/MyDrive/KiwiTrackingIA/IVP_Kiwi_Producto_Final/gdd_por_campana.png - Gráfico GDD
+• /content/drive/MyDrive/KiwiTrackingIA/IVP_Kiwi_Producto_Final/horas_frio_por_campana.png - Gráfico Horas de Frío
+• /content/drive/MyDrive/KiwiTrackingIA/IVP_Kiwi_Producto_Final/kvpi_vs_topografia.png - Gráficos KVPI vs topografía
+• /content/drive/MyDrive/KiwiTrackingIA/IVP_Kiwi_Producto_Final/correccion_mallas.png - Gráfico de corrección
+• /content/drive/MyDrive/KiwiTrackingIA/IVP_Kiwi_Producto_Final/meses_anomalos.csv - Meses anómalos
+• /content/drive/MyDrive/KiwiTrackingIA/IVP_Kiwi_Producto_Final/anomalias_climaticas.png - Gráfico de anomalías
+• /content/drive/MyDrive/KiwiTrackingIA/IVP_Kiwi_Producto_Final/metadata_ejecucion.txt - Este archivo
+
+======================================================================
+FIN DEL ARCHIVO DE METADATOS
+======================================================================
