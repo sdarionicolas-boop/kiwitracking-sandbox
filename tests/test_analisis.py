@@ -187,3 +187,98 @@ def test_rf26_no_modifica_la_tabla_de_entrada():
     analizar(tabla, huella_confirmada=huella(tabla))
 
     pd.testing.assert_frame_equal(tabla, copia)
+
+
+# --- T25 (Cambio 1): escalar_std en analizar() -------------------------------------------
+
+
+def test_rf27_por_defecto_no_se_escala_el_desvio_y_el_resumen_lo_dice():
+    resultado = _analizar_ok()
+
+    assert resultado.resumen.escalar_std is False
+
+
+def test_rf27_escalar_std_por_defecto_equivale_a_pasarlo_en_falso():
+    tabla = _tabla_12()
+
+    por_defecto = _analizar_ok(tabla)
+    explicito = _analizar_ok(tabla, escalar_std=False)
+
+    pd.testing.assert_frame_equal(por_defecto.tabla, explicito.tabla)
+    assert por_defecto.resumen == explicito.resumen
+
+
+def test_rf27_con_escalar_std_la_estabilidad_de_todas_las_plantas_es_kvpi_mean_sobre_kvpi_std():
+    tabla = _tabla_12()
+
+    resultado = _analizar_ok(tabla, escalar_std=True)
+
+    esperado = (tabla["KVPI_mean"] / tabla["KVPI_std"]).tolist()
+    assert resultado.tabla["estabilidad"].tolist() == pytest.approx(esperado)
+
+
+def test_rf27_con_escalar_std_solo_baja_la_estabilidad_de_las_plantas_bajo_malla():
+    tabla = _tabla_12()
+    normal = _analizar_ok(tabla).tabla
+    escalado = _analizar_ok(tabla, escalar_std=True).tabla
+
+    bajo = tabla["bajo_malla"] == 1
+    assert (escalado.loc[bajo, "estabilidad"] < normal.loc[bajo, "estabilidad"]).all()
+    assert escalado.loc[~bajo, "estabilidad"].tolist() == pytest.approx(normal.loc[~bajo, "estabilidad"].tolist())
+
+
+def test_rf27_escalar_std_no_cambia_el_kvpi_corregido_ni_los_ambientes():
+    tabla = _tabla_12()
+    normal = _analizar_ok(tabla).tabla
+    escalado = _analizar_ok(tabla, escalar_std=True).tabla
+
+    assert escalado["KVPI_corregido"].tolist() == normal["KVPI_corregido"].tolist()
+    assert escalado["ambiente"].tolist() == normal["ambiente"].tolist()
+
+
+def test_rf26_el_resumen_informa_que_se_escalo_el_desvio_y_sus_umbrales_son_los_de_la_tabla():
+    resultado = _analizar_ok(escalar_std=True)
+
+    assert resultado.resumen.escalar_std is True
+    umbrales = calcular_umbrales(resultado.tabla)
+    assert resultado.resumen.p75_estabilidad == pytest.approx(umbrales.p75_estabilidad)
+
+
+def test_rf27_si_no_se_aplico_la_correccion_escalar_std_no_tiene_efecto_y_el_resumen_lo_refleja():
+    tabla = _tabla_12()
+
+    sin_huella = analizar(tabla, estado_frio_ultima_campana="Adecuado")
+    sin_huella_y_escalar = analizar(tabla, estado_frio_ultima_campana="Adecuado", escalar_std=True)
+
+    pd.testing.assert_frame_equal(sin_huella.tabla, sin_huella_y_escalar.tabla)
+    assert sin_huella_y_escalar.resumen.correccion_aplicada is False
+    assert sin_huella_y_escalar.resumen.escalar_std is False  # se pidió, pero no hubo nada que escalar
+
+
+def test_rf27_con_desactivar_escalar_std_no_tiene_efecto():
+    tabla = _tabla_12()
+    comunes = {"huella_confirmada": huella(tabla), "estado_frio_ultima_campana": "Adecuado", "correccion": "desactivar"}
+
+    normal = analizar(tabla, **comunes)
+    escalado = analizar(tabla, escalar_std=True, **comunes)
+
+    pd.testing.assert_frame_equal(normal.tabla, escalado.tabla)
+    assert escalado.resumen.escalar_std is False
+
+
+def test_rf27_con_forzar_y_escalar_std_se_escala_porque_hubo_correccion():
+    tabla = _tabla_12()
+
+    resultado = analizar(
+        tabla, correccion="forzar", huella_confirmada=huella(tabla),
+        estado_frio_ultima_campana="Adecuado", escalar_std=True,
+    )
+
+    assert resultado.resumen.escalar_std is True
+    assert resultado.tabla["estabilidad"].tolist() == pytest.approx((tabla["KVPI_mean"] / tabla["KVPI_std"]).tolist())
+
+
+def test_rf27_escalar_std_no_agrega_advertencias():
+    resultado = _analizar_ok(escalar_std=True)
+
+    assert resultado.advertencias == []

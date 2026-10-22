@@ -149,3 +149,123 @@ def test_criterio4_y_6_del_cruce_al_analisis_completo_reproduce_el_resultado_pub
     assert resultado.resumen.fc == pytest.approx(1.2262, abs=1e-3)
     assert resultado_por_id["recomendacion"].tolist() == golden["recomendacion"].tolist()
     assert resultado_por_id["ambiente"].tolist() == golden["ambiente"].tolist()
+
+
+# --- T26 (Cambio 1): escalar_std sobre el lote de referencia -------------------------------
+
+CAMBIAN_CON_ESCALAR_STD = {
+    107: ("Intervenir", "Observar"),  # bajo malla
+    180: ("Intervenir", "Observar"),  # bajo malla
+    215: ("Observar", "Mantener"),
+    237: ("Observar", "Intervenir"),
+    357: ("Observar", "Intervenir"),
+}
+
+
+@pytest.fixture(scope="module")
+def con_escalar_std(entrada):
+    return _analizar(entrada, "Adecuado", escalar_std=True)
+
+
+def test_cambio1_con_el_valor_por_defecto_el_resultado_publicado_no_cambia(entrada, golden):
+    explicito = _analizar(entrada, "Deficiente", escalar_std=False).tabla.set_index("id").loc[golden.index]
+
+    assert explicito["recomendacion"].tolist() == golden["recomendacion"].tolist()
+    assert explicito["estabilidad"].tolist() == pytest.approx(golden["estabilidad"].tolist(), abs=1e-6)
+
+
+def test_cambio1_el_resumen_informa_que_se_escalo_el_desvio(con_escalar_std):
+    assert con_escalar_std.resumen.escalar_std is True
+
+
+def test_cambio1_la_estabilidad_con_escalar_std_es_kvpi_mean_sobre_kvpi_std_en_las_159_plantas(con_escalar_std, golden):
+    resultado = con_escalar_std.tabla.set_index("id").loc[golden.index]
+
+    esperado = golden["KVPI_mean"] / golden["KVPI_std"]
+    pd.testing.assert_series_equal(resultado["estabilidad"], esperado, check_names=False, atol=1e-9, rtol=0)
+
+
+def test_cambio1_el_p75_de_estabilidad_baja_de_15_185_a_14_932(con_escalar_std, golden):
+    esperado = np.percentile(golden["KVPI_mean"] / golden["KVPI_std"], 75)
+
+    assert con_escalar_std.resumen.p75_estabilidad == pytest.approx(esperado, abs=1e-9)
+    assert con_escalar_std.resumen.p75_estabilidad == pytest.approx(14.932, abs=1e-3)
+
+
+def test_cambio1_la_estabilidad_de_las_plantas_bajo_malla_baja_exactamente_el_fc(con_escalar_std, con_frio_deficiente):
+    escalada = con_escalar_std.tabla.set_index("id")
+    publicada = con_frio_deficiente.tabla.set_index("id")
+    bajo = escalada["bajo_malla"] == 1
+
+    cociente = publicada.loc[bajo, "estabilidad"] / escalada.loc[bajo, "estabilidad"]
+
+    assert cociente.tolist() == pytest.approx([con_escalar_std.resumen.fc] * 53, abs=1e-9)
+    assert (publicada.loc[~bajo, "estabilidad"] - escalada.loc[~bajo, "estabilidad"]).abs().max() < 1e-9
+
+
+def test_cambio1_las_recomendaciones_coinciden_con_un_calculo_independiente_a_partir_de_los_datos_crudos(con_escalar_std, golden):
+    # Recalcula la regla con numpy, sin usar el paquete, y compara con el resultado de analizar().
+    kvpi = golden["KVPI_corregido"].to_numpy()
+    estabilidad = (golden["KVPI_mean"] / golden["KVPI_std"]).to_numpy()
+    p33, p66 = np.percentile(kvpi, [33, 66])
+    p75 = np.percentile(estabilidad, 75)
+    esperado = np.select(
+        [(estabilidad >= p75) & (kvpi >= p66), (estabilidad >= p75) & (kvpi <= p33)],
+        ["Mantener", "Intervenir"],
+        default="Observar",
+    )
+
+    resultado = con_escalar_std.tabla.set_index("id").loc[golden.index]
+
+    assert resultado["recomendacion"].tolist() == esperado.tolist()
+
+
+def test_cambio1_cambian_exactamente_5_recomendaciones_y_son_estas(con_escalar_std, sin_ajuste_de_frio):
+    antes = sin_ajuste_de_frio.tabla.set_index("id")["recomendacion"]
+    despues = con_escalar_std.tabla.set_index("id")["recomendacion"]
+
+    cambiaron = {i: (antes[i], despues[i]) for i in antes.index if antes[i] != despues[i]}
+
+    assert cambiaron == CAMBIAN_CON_ESCALAR_STD
+
+
+def test_cambio1_las_dos_plantas_bajo_malla_que_dejan_intervenir_son_las_unicas_bajo_malla_que_cambian(con_escalar_std, golden):
+    bajo_malla = set(golden.index[golden["bajo_malla"] == 1])
+
+    assert bajo_malla & set(CAMBIAN_CON_ESCALAR_STD) == {107, 180}
+    intervenir = con_escalar_std.tabla.set_index("id")
+    assert not ((intervenir["recomendacion"] == "Intervenir") & (intervenir["bajo_malla"] == 1)).any()
+
+
+def test_cambio1_los_ambientes_y_el_kvpi_corregido_no_cambian(con_escalar_std, sin_ajuste_de_frio):
+    escalado = con_escalar_std.tabla.set_index("id")
+    normal = sin_ajuste_de_frio.tabla.set_index("id")
+
+    assert escalado["ambiente"].tolist() == normal["ambiente"].tolist()
+    assert escalado["KVPI_corregido"].tolist() == normal["KVPI_corregido"].tolist()
+
+
+def test_cambio1_sin_ajuste_de_frio_hay_16_mantener_y_19_intervenir(con_escalar_std):
+    recomendaciones = con_escalar_std.tabla["recomendacion"].value_counts().to_dict()
+
+    assert recomendaciones["Mantener"] == 16
+    assert recomendaciones["Intervenir"] == 19
+
+
+def test_cambio1_con_frio_deficiente_sigue_sin_haber_mantener_y_hay_19_intervenir(entrada):
+    resultado = _analizar(entrada, "Deficiente", escalar_std=True)
+
+    recomendaciones = resultado.tabla["recomendacion"].value_counts().to_dict()
+    assert recomendaciones.get("Mantener", 0) == 0
+    assert recomendaciones["Intervenir"] == 19
+    assert resultado.advertencias == []
+
+
+def test_cambio1_con_escalar_std_las_plantas_bajo_malla_siguen_siendo_menos_estables_que_las_de_afuera(con_escalar_std):
+    # Dato que el cambio deja a la vista: la corrección arregla el nivel del KVPI, no su variabilidad.
+    tabla = con_escalar_std.tabla
+    bajo = tabla.loc[tabla["bajo_malla"] == 1, "estabilidad"].mean()
+    fuera = tabla.loc[tabla["bajo_malla"] == 0, "estabilidad"].mean()
+
+    assert bajo == pytest.approx(9.32, abs=0.01)
+    assert fuera == pytest.approx(14.46, abs=0.01)

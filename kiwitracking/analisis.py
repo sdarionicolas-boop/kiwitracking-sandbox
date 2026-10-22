@@ -24,6 +24,7 @@ def analizar(
     min_plantas_grupo: int = 2,
     p_ambiente: tuple[float, float] = (33, 66),
     p_estabilidad: float = 75,
+    escalar_std: bool = False,
 ) -> Resultado:
     """Corrige por malla, clasifica ambientes y recomienda (RF-1 a RF-26). No modifica la entrada.
 
@@ -42,7 +43,7 @@ def analizar(
     )
     advertencias += correccion_resuelta.advertencias
 
-    plantas, avisos = calcular_estabilidad(correccion_resuelta.tabla)
+    plantas, avisos = calcular_estabilidad(correccion_resuelta.tabla, escalar_std)
     advertencias += avisos
 
     umbrales = calcular_umbrales(plantas, p_ambiente, p_estabilidad)
@@ -62,5 +63,6 @@ def analizar(
         p66=umbrales.p66,
         p75_estabilidad=umbrales.p75_estabilidad,
         huella=huella_entrada,
+        escalar_std=escalar_std and correccion_resuelta.aplicada,
     )
     return Resultado(tabla=plantas, resumen=resumen, advertencias=advertencias)

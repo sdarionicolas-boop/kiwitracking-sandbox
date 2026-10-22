@@ -121,3 +121,24 @@ Reglas: una tarea a la vez, en orden. En cada una, primero se escribe el test y 
 
 - Al iniciar T0, `AGENTS.md` se actualiza con el comando de tests dentro del `.venv`.
 - Las dudas abiertas (`id` duplicados, Student/Welch, `<` o `≤` en p33, estabilidad con `std` sin corregir) no tienen tarea: hoy se resuelven con el comportamiento provisional del plan.
+
+## Cambio 1: `escalar_std` (RF-20, RF-26, RF-27)
+
+Mismas reglas: una tarea a la vez, el test primero y visto fallar. Con el valor por defecto (`escalar_std` falso) nada de lo ya validado puede cambiar.
+
+- [x] **T24. Estabilidad con `escalar_std`.**
+  - Cubre: RF-20, RF-27, RF-21 (con `escalar_std`).
+  - Hecho cuando: `calcular_estabilidad(tabla, escalar_std=True)` da `KVPI_mean / KVPI_std` (equivale a dividir `KVPI_corregido` por `KVPI_std` × FC de esa planta); en plantas no corregidas el resultado no cambia; el valor por defecto es falso y reproduce el comportamiento anterior; con `KVPI_std = 0` la estabilidad sigue vacía y avisa.
+
+- [x] **T25. `analizar()` acepta `escalar_std` y lo informa.**
+  - Cubre: RF-26, RF-27.
+  - Hecho cuando: `analizar(..., escalar_std=True)` propaga el parámetro, el `Resumen` trae `escalar_std`, y si la corrección no se aplicó (por ejemplo, sin huella) la estabilidad es idéntica a la del modo por defecto.
+
+- [x] **T26. Golden del cambio.**
+  - Cubre: criterios 2 y 5 (por defecto) y la medición del cambio (con `escalar_std`).
+  - Hecho cuando: con el valor por defecto todos los tests del golden siguen pasando sin tocarse; con `escalar_std=True` sobre las 159 plantas el p75 de estabilidad da 14,932, cambian exactamente 5 recomendaciones, y los ambientes quedan idénticos.
+
+- [x] **T27. Validación del cambio.**
+  - Cubre: criterio 6 de la spec (cada RF con test).
+  - Hecho cuando: `validacion.md` pasa a 27 requisitos con su test, la suite completa pasa con `-W error` y el cambio queda commiteado.
+

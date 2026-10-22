@@ -9,16 +9,21 @@ from kiwitracking.resultado import Advertencia
 from kiwitracking.validacion import validar_parametros
 
 
-def calcular_estabilidad(tabla: pd.DataFrame) -> tuple[pd.DataFrame, list[Advertencia]]:
-    """Agrega `estabilidad` = KVPI_corregido / KVPI_std (RF-20, RF-21).
+def calcular_estabilidad(
+    tabla: pd.DataFrame, escalar_std: bool = False
+) -> tuple[pd.DataFrame, list[Advertencia]]:
+    """Agrega `estabilidad` = KVPI_corregido / KVPI_std (RF-20, RF-21, RF-27).
 
-    El KVPI_std se usa sin corregir, como en el notebook de referencia (duda abierta de la spec).
-    Con KVPI_std = 0 la estabilidad queda vacía y se avisa.
+    Por defecto el KVPI_std se usa sin corregir, como en el análisis publicado (v1.1). Con
+    `escalar_std` el desvío se escala con el mismo FC que la media: como KVPI_corregido es
+    KVPI_mean x FC en las plantas corregidas (y KVPI_mean en las demás), la estabilidad resulta
+    KVPI_mean / KVPI_std. Con KVPI_std = 0 la estabilidad queda vacía y se avisa.
     """
     resultado = tabla.copy()
     std_cero = resultado["KVPI_std"] == 0
     divisor = resultado["KVPI_std"].mask(std_cero)  # el 0 pasa a vacío: nunca hay infinito
-    resultado["estabilidad"] = resultado["KVPI_corregido"] / divisor
+    numerador = resultado["KVPI_mean"] if escalar_std else resultado["KVPI_corregido"]
+    resultado["estabilidad"] = numerador / divisor
 
     advertencias = []
     cantidad = int(std_cero.sum())

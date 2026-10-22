@@ -16,7 +16,7 @@ KiwiTrackingIA calcula hoy, en notebooks, el tramo final de su metodología: cor
 - **H4.** Como investigador/a, quiero que los datos defectuosos produzcan errores o advertencias claras, para no obtener resultados engañosos.
 
 ## Entradas
-Tabla por planta con: `id`, `KVPI_mean`, `KVPI_std`, `bajo_malla` (0/1). Opcionales: coordenadas con su sistema de coordenadas y el polígono de malla (para calcular `bajo_malla` y para el mapa), `estado_frio_ultima_campana` ("Deficiente", "Adecuado", "Óptimo"), `correccion` ("auto" por defecto, "forzar" o "desactivar") y `huella_confirmada` (texto, por defecto vacío; la huella que devolvió el mapa de verificación, ver RF-15 y RF-16).
+Tabla por planta con: `id`, `KVPI_mean`, `KVPI_std`, `bajo_malla` (0/1). Opcionales: coordenadas con su sistema de coordenadas y el polígono de malla (para calcular `bajo_malla` y para el mapa), `estado_frio_ultima_campana` ("Deficiente", "Adecuado", "Óptimo"), `correccion` ("auto" por defecto, "forzar" o "desactivar"), `huella_confirmada` (texto, por defecto vacío; la huella que devolvió el mapa de verificación, ver RF-15 y RF-16) y `escalar_std` (bool, falso por defecto; ver RF-27).
 
 ## Requisitos funcionales
 
@@ -44,15 +44,16 @@ Tabla por planta con: `id`, `KVPI_mean`, `KVPI_std`, `bajo_malla` (0/1). Opciona
 - **RF-19.** SI el polígono no está vacío y el cruce da 0 plantas o todas las plantas bajo malla, ENTONCES el sistema DEBE registrar una advertencia de posible error de coordenadas, y NO DEBE tratar el resultado como un lote sin malla de forma silenciosa.
 
 **Estabilidad, ambientes y recomendaciones**
-- **RF-20.** El sistema DEBE calcular `estabilidad = KVPI_corregido / KVPI_std` por planta, con `KVPI_std` sin corregir.
+- **RF-20.** El sistema DEBE calcular `estabilidad = KVPI_corregido / KVPI_std` por planta. Por defecto (`escalar_std` falso) el `KVPI_std` se usa sin corregir, como en el análisis publicado (v1.1).
 - **RF-21.** SI `KVPI_std` es 0 para una planta, ENTONCES `estabilidad` DEBE quedar vacía, la recomendación DEBE ser "Observar" y DEBE registrarse una advertencia.
 - **RF-22.** El sistema DEBE calcular p33 y p66 de `KVPI_corregido` y p75 de `estabilidad`, con interpolación lineal, sobre las plantas válidas del lote.
 - **RF-23.** El sistema DEBE asignar el ambiente: "Alto Potencial" si `KVPI_corregido` ≥ p66; "Limitante" si < p33; "Transicional" en el resto.
 - **RF-24.** El sistema DEBE asignar la recomendación: "Mantener" si `KVPI_corregido` ≥ p66 y `estabilidad` ≥ p75; "Intervenir" si `KVPI_corregido` ≤ p33 y `estabilidad` ≥ p75; "Observar" en el resto.
 - **RF-25.** CUANDO `estado_frio_ultima_campana` sea "Deficiente", el sistema DEBE reclasificar "Mantener" a "Observar". SI no se informa, NO DEBE aplicar ajuste y DEBE registrar una advertencia.
+- **RF-27.** CUANDO `escalar_std` sea verdadero, el sistema DEBE dividir el `KVPI_corregido` por el `KVPI_std` multiplicado por el mismo FC con que se corrigió esa planta (1 para las plantas que no se corrigieron), de modo que `estabilidad` equivalga a `KVPI_mean / KVPI_std` en las plantas corregidas y no cambie para las demás. SI no se aplicó la corrección, `escalar_std` NO DEBE tener efecto.
 
 **Salida**
-- **RF-26.** El sistema DEBE devolver, junto a la tabla por planta, un resumen con FC, p-valor, tamaños de grupo, umbrales, si se aplicó la corrección y la lista de advertencias.
+- **RF-26.** El sistema DEBE devolver, junto a la tabla por planta, un resumen con FC, p-valor, tamaños de grupo, umbrales, si se aplicó la corrección, si se escaló el desvío (`escalar_std`) y la lista de advertencias.
 
 ## Requisitos no funcionales
 - El núcleo no lee ni escribe archivos ni contiene rutas fijas (constitución #6, #9).
@@ -84,10 +85,13 @@ Tabla por planta con: `id`, `KVPI_mean`, `KVPI_std`, `bajo_malla` (0/1). Opciona
 7. Demostración manual: ejecutar el flujo sobre el lote y revisar el mapa de verificación.
 
 ## Dudas abiertas
-- **[NECESITA ACLARACIÓN]** `estabilidad` usa el `KVPI_std` sin corregir, lo que infla un 22,6 % la estabilidad de las plantas bajo malla. Se reproduce el golden en esta spec; evaluar corrección en un cambio posterior.
+- **[NECESITA ACLARACIÓN]** Decidir si, en una versión futura, `escalar_std` pasa a ser verdadero por defecto. Medido sobre el lote de referencia: con `escalar_std` verdadero cambian 5 de 159 recomendaciones (2 plantas bajo malla dejan "Intervenir"; 2 fuera de malla pasan a "Intervenir" y 1 a "Mantener"), sin cambios en ambientes. Por defecto se mantiene el comportamiento publicado (v1.1).
 - **[NECESITA ACLARACIÓN]** La metodología usa "< p33" para Limitante y "≤ p33" para Intervenir. Con datos continuos no hay diferencia práctica; decidir si unificar.
 - **[NECESITA ACLARACIÓN]** La prueba t de Student (varianzas iguales) frente a Welch; la metodología dice Student, pero no hay un p-valor publicado para comparar.
 - **[NECESITA ACLARACIÓN]** Tratamiento de `id` duplicados.
 - **[NECESITA ACLARACIÓN]** El FC figura como 1,226 / 1,227 en la documentación y da 1,2262 con los datos.
 - **[NECESITA ACLARACIÓN]** En modo "auto", si los dos grupos son válidos pero no se puede calcular el p-valor (ambos sin variación), la implementación no corrige y avisa (`P_NO_DISPONIBLE`). La spec no cubre este caso.
 - **[NECESITA ACLARACIÓN]** Decisiones de implementación (T15): la huella se calcula sobre la tabla de entrada completa (antes de excluir plantas sin KVPI); si no queda ninguna planta con `KVPI_mean` válido se lanza `ErrorDeEntrada`.
+
+## Historial de cambios
+- **Cambio 1 (21/10/2026).** La estabilidad de las plantas bajo malla usaba el `KVPI_std` sin escalar con el FC, lo que la inflaba un 22,6 %. Se agrega el parámetro `escalar_std` (falso por defecto, para reproducir v1.1) y el requisito RF-27. RF-20 y RF-26 se ajustan.
