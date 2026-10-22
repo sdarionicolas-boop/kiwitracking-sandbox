@@ -78,7 +78,7 @@ Reglas: una tarea a la vez, en orden. En cada una, primero se escribe el test y 
   - Cubre: RF-26 y el encadenamiento de RF-1 a RF-25.
   - Hecho cuando: una tabla sintética de 12 plantas atraviesa todo el flujo y devuelve un `Resultado` con tabla, resumen (FC, p, tamaños, umbrales, huella, `correccion_aplicada`) y la lista de advertencias; la tabla de entrada no se modificó.
 
-- [ ] **T16. Test contra el golden.**
+- [x] **T16. Test contra el golden.**
   - Cubre: criterios de finalización 2, 3 y 5.
   - Hecho cuando: con `tests/golden/datos_plantas_completos.csv`, la huella de las 159 plantas y estado de frío "Deficiente": `KVPI_corregido`, `estabilidad` y umbrales coinciden con 1e-6; `ambiente` y `recomendacion` coinciden exactamente; FC = 1,2262 ± 1e-3; p < 0,001. Sin ajuste de frío: 15 "Mantener" y 19 "Intervenir".
 
