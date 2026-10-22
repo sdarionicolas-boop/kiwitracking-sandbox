@@ -50,3 +50,35 @@ def calcular_umbrales(
     p_estab = float(np.percentile(estabilidad, p_estabilidad, method="linear")) if len(estabilidad) else None
 
     return Umbrales(p33=float(bajo), p66=float(alto), p75_estabilidad=p_estab)
+
+
+def asignar_ambiente(tabla: pd.DataFrame, umbrales: Umbrales) -> pd.DataFrame:
+    """Agrega `ambiente` (RF-23): >= p66 Alto Potencial, < p33 Limitante, el resto Transicional."""
+    resultado = tabla.copy()
+    kvpi = resultado["KVPI_corregido"]
+    resultado["ambiente"] = np.select(
+        [kvpi >= umbrales.p66, kvpi < umbrales.p33],
+        ["Alto Potencial", "Limitante"],
+        default="Transicional",
+    )
+    return resultado
+
+
+def asignar_recomendacion(tabla: pd.DataFrame, umbrales: Umbrales) -> pd.DataFrame:
+    """Agrega `recomendacion` (RF-24): Mantener, Intervenir u Observar.
+
+    Sin estabilidad (vacía) o sin p75 de estabilidad, ninguna planta califica: Observar (RF-21).
+    """
+    resultado = tabla.copy()
+    kvpi = resultado["KVPI_corregido"]
+    if umbrales.p75_estabilidad is None:
+        estable = pd.Series(False, index=resultado.index)
+    else:
+        estable = resultado["estabilidad"] >= umbrales.p75_estabilidad  # un vacío da False
+
+    resultado["recomendacion"] = np.select(
+        [estable & (kvpi >= umbrales.p66), estable & (kvpi <= umbrales.p33)],
+        ["Mantener", "Intervenir"],
+        default="Observar",
+    )
+    return resultado

@@ -3,7 +3,13 @@ import math
 import pandas as pd
 import pytest
 
-from kiwitracking.clasificacion import calcular_estabilidad, calcular_umbrales
+from kiwitracking.clasificacion import (
+    Umbrales,
+    asignar_ambiente,
+    asignar_recomendacion,
+    calcular_estabilidad,
+    calcular_umbrales,
+)
 
 
 def _tabla(corregido, std):
@@ -156,3 +162,134 @@ def test_rf22_no_modifica_la_tabla_de_entrada():
     calcular_umbrales(tabla)
 
     pd.testing.assert_frame_equal(tabla, copia)
+
+
+# --- T12: ambiente ----------------------------------------------------------------------
+
+UMBRALES = Umbrales(p33=0.50, p66=0.60, p75_estabilidad=20.0)
+
+
+def _tabla_ambiente(corregido):
+    return pd.DataFrame({"id": range(1, len(corregido) + 1), "KVPI_corregido": corregido})
+
+
+def test_rf23_asigna_alto_potencial_transicional_y_limitante():
+    tabla = asignar_ambiente(_tabla_ambiente([0.70, 0.55, 0.40]), UMBRALES)
+
+    assert tabla["ambiente"].tolist() == ["Alto Potencial", "Transicional", "Limitante"]
+
+
+def test_rf23_una_planta_justo_en_p66_es_alto_potencial():
+    tabla = asignar_ambiente(_tabla_ambiente([0.60]), UMBRALES)
+
+    assert tabla["ambiente"].tolist() == ["Alto Potencial"]
+
+
+def test_rf23_una_planta_justo_en_p33_es_transicional_y_no_limitante():
+    tabla = asignar_ambiente(_tabla_ambiente([0.50]), UMBRALES)
+
+    assert tabla["ambiente"].tolist() == ["Transicional"]
+
+
+def test_rf23_una_planta_apenas_por_debajo_de_p33_es_limitante():
+    tabla = asignar_ambiente(_tabla_ambiente([0.4999]), UMBRALES)
+
+    assert tabla["ambiente"].tolist() == ["Limitante"]
+
+
+def test_rf23_conserva_las_columnas_y_no_modifica_la_entrada():
+    entrada = _tabla_ambiente([0.70, 0.40])
+    copia = entrada.copy()
+
+    resultado = asignar_ambiente(entrada, UMBRALES)
+
+    assert list(resultado.columns) == list(copia.columns) + ["ambiente"]
+    pd.testing.assert_frame_equal(entrada, copia)
+
+
+# --- T13: recomendación -----------------------------------------------------------------
+# UMBRALES: p33 = 0.50, p66 = 0.60, p75 de estabilidad = 20.0
+
+
+def _tabla_recomendacion(filas):
+    """`filas`: lista de (KVPI_corregido, estabilidad)."""
+    return pd.DataFrame(
+        {
+            "id": range(1, len(filas) + 1),
+            "KVPI_corregido": [f[0] for f in filas],
+            "estabilidad": [f[1] for f in filas],
+        }
+    )
+
+
+def test_rf24_mantener_con_potencial_alto_y_estabilidad_alta():
+    tabla = asignar_recomendacion(_tabla_recomendacion([(0.70, 25.0)]), UMBRALES)
+
+    assert tabla["recomendacion"].tolist() == ["Mantener"]
+
+
+def test_rf24_intervenir_con_potencial_bajo_y_estabilidad_alta():
+    tabla = asignar_recomendacion(_tabla_recomendacion([(0.40, 25.0)]), UMBRALES)
+
+    assert tabla["recomendacion"].tolist() == ["Intervenir"]
+
+
+def test_rf24_observar_con_potencial_intermedio_aunque_la_estabilidad_sea_alta():
+    tabla = asignar_recomendacion(_tabla_recomendacion([(0.55, 25.0)]), UMBRALES)
+
+    assert tabla["recomendacion"].tolist() == ["Observar"]
+
+
+def test_rf24_observar_con_estabilidad_baja_aunque_el_potencial_sea_alto_o_bajo():
+    tabla = asignar_recomendacion(_tabla_recomendacion([(0.70, 10.0), (0.40, 10.0)]), UMBRALES)
+
+    assert tabla["recomendacion"].tolist() == ["Observar", "Observar"]
+
+
+def test_rf24_estabilidad_justo_en_p75_alcanza():
+    tabla = asignar_recomendacion(_tabla_recomendacion([(0.70, 20.0), (0.70, 19.999)]), UMBRALES)
+
+    assert tabla["recomendacion"].tolist() == ["Mantener", "Observar"]
+
+
+def test_rf24_potencial_justo_en_p66_es_mantener():
+    tabla = asignar_recomendacion(_tabla_recomendacion([(0.60, 25.0)]), UMBRALES)
+
+    assert tabla["recomendacion"].tolist() == ["Mantener"]
+
+
+def test_rf24_potencial_justo_en_p33_es_intervenir_aunque_su_ambiente_sea_transicional():
+    # Asimetría heredada de la metodología (duda abierta): Limitante es "< p33", Intervenir es "<= p33".
+    tabla = _tabla_recomendacion([(0.50, 25.0)])
+
+    recomendacion = asignar_recomendacion(tabla, UMBRALES)["recomendacion"].tolist()
+    ambiente = asignar_ambiente(tabla, UMBRALES)["ambiente"].tolist()
+
+    assert recomendacion == ["Intervenir"]
+    assert ambiente == ["Transicional"]
+
+
+def test_rf21_planta_sin_estabilidad_es_observar_aunque_su_potencial_sea_extremo():
+    tabla = asignar_recomendacion(
+        _tabla_recomendacion([(0.90, float("nan")), (0.10, float("nan"))]), UMBRALES
+    )
+
+    assert tabla["recomendacion"].tolist() == ["Observar", "Observar"]
+
+
+def test_rf24_si_no_hay_p75_de_estabilidad_todas_son_observar():
+    sin_p75 = Umbrales(p33=0.50, p66=0.60, p75_estabilidad=None)
+
+    tabla = asignar_recomendacion(_tabla_recomendacion([(0.70, 25.0), (0.40, 25.0)]), sin_p75)
+
+    assert tabla["recomendacion"].tolist() == ["Observar", "Observar"]
+
+
+def test_rf24_conserva_las_columnas_y_no_modifica_la_entrada():
+    entrada = _tabla_recomendacion([(0.70, 25.0), (0.40, 10.0)])
+    copia = entrada.copy()
+
+    resultado = asignar_recomendacion(entrada, UMBRALES)
+
+    assert list(resultado.columns) == list(copia.columns) + ["recomendacion"]
+    pd.testing.assert_frame_equal(entrada, copia)

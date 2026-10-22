@@ -60,11 +60,11 @@ Reglas: una tarea a la vez, en orden. En cada una, primero se escribe el test y 
   - Cubre: RF-22.
   - Hecho cuando: sobre una tabla de 11 valores conocidos, p33, p66 y p75 coinciden con `numpy.percentile` calculado a mano en el test; las plantas con `std = 0` no entran al p75 de estabilidad.
 
-- [ ] **T12. Ambiente.**
+- [x] **T12. Ambiente.**
   - Cubre: RF-23.
   - Hecho cuando: una planta justo en p66 es "Alto Potencial"; justo en p33 es "Transicional"; por debajo, "Limitante".
 
-- [ ] **T13. Recomendación.**
+- [x] **T13. Recomendación.**
   - Cubre: RF-24, RF-21 (planta con `std = 0` → "Observar").
   - Hecho cuando: hay un test por caso: "Mantener", "Intervenir", "Observar", un empate exacto en p33 con estabilidad alta (que da "Intervenir"), y una planta con estabilidad vacía que da "Observar".
 
