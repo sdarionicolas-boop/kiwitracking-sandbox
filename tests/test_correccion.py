@@ -5,10 +5,14 @@ from scipy import stats
 from kiwitracking.correccion import (
     DecisionCorreccion,
     FactorMalla,
+    aplicar_correccion,
     calcular_factor,
+    decidir_correccion,
     decidir_modo_auto,
     evaluar_confirmacion,
+    resolver_correccion,
 )
+from kiwitracking.resultado import ErrorDeEntrada
 from kiwitracking.huella import huella
 
 
@@ -266,3 +270,177 @@ def test_rf11_integrado_con_calcular_factor_grupos_parecidos_no_corrigen():
 
     assert decision.corregir is False
     assert decision.advertencia.codigo == "NO_SIGNIFICATIVO"
+
+
+# --- T9: modos "forzar" y "desactivar", y aplicación de la corrección --------------------
+
+
+def test_rf13_desactivar_nunca_corrige_aunque_p_sea_chico():
+    decision = decidir_correccion(_factor(p_valor=0.0001), "desactivar")
+
+    assert decision == DecisionCorreccion(corregir=False, advertencia=None)
+
+
+def test_rf12_forzar_corrige_con_p_alto_y_avisa_con_el_p_valor():
+    decision = decidir_correccion(_factor(p_valor=0.3), "forzar")
+
+    assert decision.corregir is True
+    assert decision.advertencia.codigo == "CORRECCION_FORZADA"
+    assert "0.3" in decision.advertencia.mensaje
+
+
+def test_rf12_forzar_tambien_avisa_si_el_p_valor_ya_era_significativo():
+    decision = decidir_correccion(_factor(p_valor=0.001), "forzar")
+
+    assert decision.corregir is True
+    assert decision.advertencia.codigo == "CORRECCION_FORZADA"
+
+
+def test_rf12_forzar_corrige_aunque_no_haya_p_valor_y_lo_dice():
+    decision = decidir_correccion(_factor(p_valor=None), "forzar")
+
+    assert decision.corregir is True
+    assert decision.advertencia.codigo == "CORRECCION_FORZADA"
+    assert "no disponible" in decision.advertencia.mensaje
+
+
+@pytest.mark.parametrize("n_bajo,n_fuera", [(1, 5), (5, 1), (0, 5), (5, 0)])
+def test_rf12_forzar_con_un_grupo_de_menos_de_2_plantas_no_corrige_y_da_la_causa(n_bajo, n_fuera):
+    decision = decidir_correccion(_factor(n_bajo=n_bajo, n_fuera=n_fuera), "forzar")
+
+    assert decision.corregir is False
+    assert decision.advertencia.codigo == "GRUPO_CHICO"
+
+
+@pytest.mark.parametrize("media", [0.0, -0.3])
+def test_rf12_forzar_con_media_bajo_malla_no_positiva_no_corrige_y_da_la_causa(media):
+    decision = decidir_correccion(_factor(media_bajo=media), "forzar")
+
+    assert decision.corregir is False
+    assert decision.advertencia.codigo == "MEDIA_NO_POSITIVA"
+
+
+def test_rf7_decidir_correccion_en_auto_delega_en_decidir_modo_auto():
+    for factor in (_factor(p_valor=0.01), _factor(p_valor=0.4), _factor(n_bajo=1, p_valor=None)):
+        assert decidir_correccion(factor, "auto") == decidir_modo_auto(factor)
+
+
+def test_rf14_decidir_correccion_con_modo_invalido_da_error():
+    with pytest.raises(ErrorDeEntrada, match="auto"):
+        decidir_correccion(_factor(), "siempre")
+
+
+def test_rf7_aplicar_correccion_multiplica_solo_las_plantas_bajo_malla():
+    tabla = _tabla(fuera=[0.60, 0.62], bajo=[0.50, 0.40])
+
+    resultado = aplicar_correccion(tabla, fc=1.2)
+
+    assert resultado["KVPI_corregido"].tolist() == pytest.approx([0.60, 0.62, 0.60, 0.48])
+
+
+def test_rf7_aplicar_correccion_conserva_las_columnas_y_no_modifica_la_entrada():
+    tabla = _tabla(fuera=[0.60], bajo=[0.50])
+    copia = tabla.copy()
+
+    resultado = aplicar_correccion(tabla, fc=1.2)
+
+    assert list(resultado.columns) == list(copia.columns) + ["KVPI_corregido"]
+    pd.testing.assert_frame_equal(tabla, copia)
+
+
+def test_rf11_aplicar_correccion_sin_fc_deja_el_kvpi_corregido_igual_al_original():
+    tabla = _tabla(fuera=[0.60], bajo=[0.50])
+
+    resultado = aplicar_correccion(tabla, fc=None)
+
+    assert resultado["KVPI_corregido"].tolist() == tabla["KVPI_mean"].tolist()
+
+
+def _tabla_distinta():
+    return _tabla(fuera=[0.59, 0.60, 0.61, 0.60], bajo=[0.44, 0.45, 0.46, 0.45])
+
+
+def test_rf7_resolver_en_auto_con_huella_correcta_corrige_y_no_avisa():
+    tabla = _tabla_distinta()
+
+    r = resolver_correccion(tabla, "auto", huella(tabla))
+
+    assert r.aplicada is True
+    assert r.advertencias == []
+    assert r.factor.fc == pytest.approx(0.60 / 0.45)
+    bajo = r.tabla["bajo_malla"] == 1
+    esperado = (tabla.loc[bajo, "KVPI_mean"] * r.factor.fc).tolist()
+    assert r.tabla.loc[bajo, "KVPI_corregido"].tolist() == pytest.approx(esperado)
+    assert r.tabla.loc[~bajo, "KVPI_corregido"].tolist() == tabla.loc[~bajo, "KVPI_mean"].tolist()
+
+
+@pytest.mark.parametrize("modo", ["auto", "forzar"])
+def test_rf8_sin_huella_no_se_corrige_y_se_avisa_pero_el_factor_se_calcula(modo):
+    tabla = _tabla_distinta()
+
+    r = resolver_correccion(tabla, modo, "")
+
+    assert r.aplicada is False
+    assert [a.codigo for a in r.advertencias] == ["FALTA_CONFIRMACION"]
+    assert r.tabla["KVPI_corregido"].tolist() == tabla["KVPI_mean"].tolist()
+    assert r.factor.fc is not None
+
+
+def test_rf8_con_desactivar_y_huella_vacia_se_sigue_avisando_la_falta_de_confirmacion():
+    # La prueba integrada que quedó pendiente de T7 (decisión provisional: se avisa igual).
+    r = resolver_correccion(_tabla_distinta(), "desactivar", "")
+
+    assert r.aplicada is False
+    assert [a.codigo for a in r.advertencias] == ["FALTA_CONFIRMACION"]
+
+
+def test_rf9_huella_que_no_coincide_bloquea_incluso_el_modo_forzar():
+    r = resolver_correccion(_tabla_distinta(), "forzar", "000000000000")
+
+    assert r.aplicada is False
+    assert [a.codigo for a in r.advertencias] == ["HUELLA_NO_COINCIDE"]
+
+
+def test_rf13_desactivar_con_huella_correcta_no_corrige_y_no_avisa():
+    tabla = _tabla_distinta()
+
+    r = resolver_correccion(tabla, "desactivar", huella(tabla))
+
+    assert r.aplicada is False
+    assert r.advertencias == []
+    assert r.tabla["KVPI_corregido"].tolist() == tabla["KVPI_mean"].tolist()
+
+
+def test_rf12_resolver_forzar_con_grupos_parecidos_corrige_y_avisa_correccion_forzada():
+    tabla = _tabla(fuera=[0.50, 0.52, 0.48, 0.51], bajo=[0.51, 0.49, 0.50, 0.52])
+
+    r = resolver_correccion(tabla, "forzar", huella(tabla))
+
+    assert r.aplicada is True
+    assert [a.codigo for a in r.advertencias] == ["CORRECCION_FORZADA"]
+
+
+def test_rf10_resolver_sin_plantas_bajo_malla_no_corrige_y_no_avisa():
+    tabla = _tabla(fuera=[0.5, 0.6, 0.7], bajo=[])
+
+    r = resolver_correccion(tabla, "auto", huella(tabla))
+
+    assert r.aplicada is False
+    assert r.advertencias == []
+    assert r.tabla["KVPI_corregido"].tolist() == tabla["KVPI_mean"].tolist()
+
+
+def test_rf14_resolver_con_modo_invalido_da_error():
+    tabla = _tabla_distinta()
+
+    with pytest.raises(ErrorDeEntrada):
+        resolver_correccion(tabla, "siempre", huella(tabla))
+
+
+def test_rf7_resolver_no_modifica_la_tabla_de_entrada():
+    tabla = _tabla_distinta()
+    copia = tabla.copy()
+
+    resolver_correccion(tabla, "auto", huella(tabla))
+
+    pd.testing.assert_frame_equal(tabla, copia)

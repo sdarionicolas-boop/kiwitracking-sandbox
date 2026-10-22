@@ -7,6 +7,7 @@ from scipy import stats
 
 from kiwitracking.huella import huella
 from kiwitracking.resultado import Advertencia
+from kiwitracking.validacion import validar_parametros
 
 
 @dataclass(frozen=True)
@@ -106,3 +107,74 @@ def decidir_modo_auto(
         )
 
     return DecisionCorreccion(True)
+
+
+def decidir_correccion(
+    factor: FactorMalla, modo: str, alfa: float = 0.05, min_plantas_grupo: int = 2
+) -> DecisionCorreccion:
+    """Decide si corregir según el modo: "auto", "forzar" o "desactivar" (RF-7, RF-11 a RF-14)."""
+    validar_parametros(correccion=modo)
+
+    if modo == "desactivar":
+        return DecisionCorreccion(False)
+    if modo == "auto":
+        return decidir_modo_auto(factor, alfa, min_plantas_grupo)
+
+    # "forzar": ignora el p-valor, pero no puede saltearse que haya grupos y una media positiva.
+    if factor.n_bajo < min_plantas_grupo or factor.n_fuera < min_plantas_grupo:
+        return DecisionCorreccion(
+            False,
+            Advertencia(
+                "GRUPO_CHICO",
+                f"No se pudo forzar la corrección: un grupo tiene menos de {min_plantas_grupo} plantas "
+                f"(bajo malla: {factor.n_bajo}, fuera de malla: {factor.n_fuera}).",
+            ),
+        )
+    if factor.media_bajo is None or factor.media_bajo <= 0:
+        return DecisionCorreccion(
+            False,
+            Advertencia("MEDIA_NO_POSITIVA", "No se pudo forzar la corrección: la media del KVPI bajo malla no es mayor que 0."),
+        )
+    p = "no disponible" if factor.p_valor is None else f"{factor.p_valor:.4g}"
+    return DecisionCorreccion(
+        True, Advertencia("CORRECCION_FORZADA", f"Corrección forzada por el usuario (p = {p}).")
+    )
+
+
+def aplicar_correccion(tabla: pd.DataFrame, fc: float | None) -> pd.DataFrame:
+    """Copia de la tabla con KVPI_corregido: KVPI_mean x FC solo bajo malla; sin FC, igual a KVPI_mean."""
+    resultado = tabla.copy()
+    resultado["KVPI_corregido"] = resultado["KVPI_mean"]
+    if fc is not None:
+        bajo_malla = resultado["bajo_malla"] == 1
+        resultado.loc[bajo_malla, "KVPI_corregido"] = resultado.loc[bajo_malla, "KVPI_mean"] * fc
+    return resultado
+
+
+@dataclass
+class CorreccionResuelta:
+    tabla: pd.DataFrame
+    factor: FactorMalla
+    aplicada: bool
+    advertencias: list[Advertencia]
+
+
+def resolver_correccion(
+    tabla: pd.DataFrame,
+    modo: str,
+    huella_confirmada: str | None,
+    alfa: float = 0.05,
+    min_plantas_grupo: int = 2,
+) -> CorreccionResuelta:
+    """Corrección completa: primero la confirmación visual (RF-8, RF-9), después la decisión."""
+    validar_parametros(correccion=modo)
+    factor = calcular_factor(tabla)
+
+    bloqueo = evaluar_confirmacion(tabla, huella_confirmada)
+    if bloqueo is not None:
+        return CorreccionResuelta(aplicar_correccion(tabla, None), factor, False, [bloqueo])
+
+    decision = decidir_correccion(factor, modo, alfa, min_plantas_grupo)
+    advertencias = [decision.advertencia] if decision.advertencia is not None else []
+    fc = factor.fc if decision.corregir else None
+    return CorreccionResuelta(aplicar_correccion(tabla, fc), factor, decision.corregir, advertencias)

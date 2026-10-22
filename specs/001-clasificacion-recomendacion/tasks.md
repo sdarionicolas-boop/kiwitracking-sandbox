@@ -46,7 +46,7 @@ Reglas: una tarea a la vez, en orden. En cada una, primero se escribe el test y 
   - Cubre: RF-7, RF-10, RF-11.
   - Hecho cuando: hay un test por rama: corrige con p < 0,05 y grupos válidos; no corrige con p ≥ 0,05, con un grupo de 1 planta y con media bajo malla ≤ 0, cada uno con su advertencia de causa; sin plantas bajo malla, o con todas bajo malla, no corrige y no da error.
 
-- [ ] **T9. Modos "forzar" y "desactivar" y aplicación de la corrección.**
+- [x] **T9. Modos "forzar" y "desactivar" y aplicación de la corrección.**
   - Cubre: RF-12, RF-13.
   - Hecho cuando: con p ≥ 0,05, "forzar" corrige y emite `CORRECCION_FORZADA` con el p-valor; "forzar" con un grupo de 1 planta no corrige; "desactivar" nunca corrige; en los casos que corrigen, `KVPI_corregido` = `KVPI_mean` × FC solo para `bajo_malla = 1`.
 
