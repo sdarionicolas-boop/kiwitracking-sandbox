@@ -18,7 +18,7 @@ Lee: `spec.md` (RF-1 a RF-27), `clarificacion.md` y `plan.md`.
 
 ## Flujo: lectura y mapa
 
-- [ ] **T3.2. Preparar las plantas y la malla.** `flujo.preparar_plantas`.
+- [x] **T3.2. Preparar las plantas y la malla.** `flujo.preparar_plantas`.
   - Cubre: RF-2, RF-3, RF-4, RF-5.
   - Hecho cuando: un archivo que no existe da un error que nombra el archivo; con `--malla` se exige `--crs-plantas` y se calcula `bajo_malla` con el cruce de la spec 001, incluidas sus advertencias; sin `--malla` se usa `bajo_malla` del CSV, y si no está da un error que pide la malla o esa columna; con `--malla` y `bajo_malla` en el CSV gana el cálculo y sale `BAJO_MALLA_REEMPLAZADO` con la cantidad de plantas que cambiaron.
 
