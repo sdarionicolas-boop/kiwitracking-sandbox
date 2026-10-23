@@ -5,17 +5,19 @@ Cada función devuelve el texto del archivo; escribirlo en disco (con limpieza s
 
 import json
 import math
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from kiwitracking.flujo import ResultadoFlujo
-from kiwitracking.resultado import Advertencia
+from kiwitracking.resultado import Advertencia, ErrorDeEntrada
 
 # Columnas que van primero y en este orden (RF-27); las demás de entrada siguen en su orden original.
 ORDEN_CONOCIDO = (
     "id", "KVPI_mean", "KVPI_corregido", "KVPI_std", "estabilidad", "ambiente", "recomendacion", "bajo_malla",
 )
+ARCHIVOS_DE_RESULTADOS = ("plantas.csv", "resumen.json", "advertencias.json")
 CAMPOS_DEL_RESUMEN = (
     "fc", "p_valor", "n_bajo_malla", "n_fuera_malla", "correccion_aplicada", "p33", "p66", "p75_estabilidad",
     "escalar_std", "prueba_t",
@@ -74,3 +76,45 @@ def resumen_json(flujo: ResultadoFlujo) -> str:
 def advertencias_json(advertencias: list[Advertencia]) -> str:
     """El texto de `advertencias.json`: una lista de objetos con `codigo` y `mensaje`, en el orden recibido."""
     return _texto_json([{"codigo": a.codigo, "mensaje": a.mensaje} for a in advertencias])
+
+
+def escribir_resultados(carpeta, flujo: ResultadoFlujo, sobrescribir: bool = False) -> list[Path]:
+    """Escribe los tres archivos de resultados en la carpeta y devuelve sus rutas (RF-17, RF-20).
+
+    Todo el contenido se arma antes de tocar el disco, así que un error de datos no deja nada escrito. Si falla
+    la escritura de un archivo (disco lleno, permisos, un archivo abierto en otro programa), se borran los que
+    esta misma corrida ya había escrito (y la carpeta, si la creó ella) y se informa cuál falló y por qué. No hay
+    garantía si el sistema se interrumpe durante la escritura. Con `sobrescribir`, los archivos anteriores se
+    reemplazan recién cuando ya se calculó todo.
+    """
+    carpeta = Path(carpeta)
+    if carpeta.exists() and not carpeta.is_dir():
+        raise ErrorDeEntrada(f"{carpeta.name} es un archivo, no una carpeta: indicá una carpeta para --salida.")
+    previos = [nombre for nombre in ARCHIVOS_DE_RESULTADOS if (carpeta / nombre).exists()]
+    if previos and not sobrescribir:
+        raise ErrorDeEntrada(
+            f"La carpeta {carpeta.name} ya tiene resultados ({', '.join(previos)}): usá --sobrescribir para reemplazarlos."
+        )
+
+    contenidos = {
+        "plantas.csv": plantas_csv(flujo.resultado.tabla),
+        "resumen.json": resumen_json(flujo),
+        "advertencias.json": advertencias_json(flujo.advertencias),
+    }
+    creada = not carpeta.exists()
+    escritos: list[Path] = []
+    nombre = ""
+    try:
+        carpeta.mkdir(parents=True, exist_ok=True)
+        for nombre, texto in contenidos.items():
+            ruta = carpeta / nombre
+            with open(ruta, "w", encoding="utf-8", newline="") as archivo:
+                escritos.append(ruta)
+                archivo.write(texto)
+    except OSError as error:
+        for ruta in escritos:
+            ruta.unlink(missing_ok=True)
+        if creada and carpeta.is_dir() and not any(carpeta.iterdir()):
+            carpeta.rmdir()
+        raise ErrorDeEntrada(f"No se pudo escribir {nombre or carpeta.name}: {error.strerror or error}.") from error
+    return escritos

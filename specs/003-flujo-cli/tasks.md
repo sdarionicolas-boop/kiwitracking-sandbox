@@ -46,7 +46,7 @@ Lee: `spec.md` (RF-1 a RF-27), `clarificacion.md` y `plan.md`.
   - Cubre: RF-15, RF-16, RF-25, RF-27.
   - Hecho cuando: `plantas.csv` lleva las columnas en el orden de RF-27, las demás de entrada después en su orden, las filas en el orden de entrada, y reemplaza las columnas de resultado que ya venían; sale igual aunque cambie el orden de columnas de la entrada; `resumen.json` tiene la estructura y el orden de claves de RF-25, escribe `null` para los vacíos, `NaN` e infinitos, números comunes para los tipos de NumPy y los decimales completos, y se lee con un lector estricto devolviendo los mismos valores; `advertencias.json` es una lista de objetos `codigo` y `mensaje` en el orden de RF-14; todos los archivos son UTF-8 sin BOM y con `\n`.
 
-- [ ] **T3.8. Escritura con limpieza.** `salida.escribir_resultados`.
+- [x] **T3.8. Escritura con limpieza.** `salida.escribir_resultados`.
   - Cubre: RF-17, RF-20.
   - Hecho cuando: crea la carpeta si no existe; si ya hay alguno de los tres archivos y no se indicó `--sobrescribir`, da un error sin modificar nada; con `--sobrescribir` los reemplaza; si falla la escritura del segundo archivo (simulado), borra el primero y da un error de entrada que nombra el archivo y el motivo; si `--salida` es un archivo existente, da un error que lo dice; los archivos de entrada no cambian (se comparan sus bytes antes y después).
 
