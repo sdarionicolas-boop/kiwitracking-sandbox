@@ -1,0 +1,76 @@
+"""Contenido de los archivos de resultados de `analizar` (spec 003): tabla por planta, resumen y advertencias.
+
+Cada función devuelve el texto del archivo; escribirlo en disco (con limpieza si algo falla) es otra tarea.
+"""
+
+import json
+import math
+
+import numpy as np
+import pandas as pd
+
+from kiwitracking.flujo import ResultadoFlujo
+from kiwitracking.resultado import Advertencia
+
+# Columnas que van primero y en este orden (RF-27); las demás de entrada siguen en su orden original.
+ORDEN_CONOCIDO = (
+    "id", "KVPI_mean", "KVPI_corregido", "KVPI_std", "estabilidad", "ambiente", "recomendacion", "bajo_malla",
+)
+CAMPOS_DEL_RESUMEN = (
+    "fc", "p_valor", "n_bajo_malla", "n_fuera_malla", "correccion_aplicada", "p33", "p66", "p75_estabilidad",
+    "escalar_std", "prueba_t",
+)
+
+
+def tabla_de_plantas(tabla: pd.DataFrame) -> pd.DataFrame:
+    """La tabla por planta con las columnas conocidas primero y las demás después, sin cambiar las filas (RF-27)."""
+    conocidas = [columna for columna in ORDEN_CONOCIDO if columna in tabla.columns]
+    otras = [columna for columna in tabla.columns if columna not in ORDEN_CONOCIDO]
+    return tabla[conocidas + otras]
+
+
+def plantas_csv(tabla: pd.DataFrame) -> str:
+    """El texto de `plantas.csv`: números completos, celdas vacías para los valores vacíos y saltos de línea LF (RF-16)."""
+    return tabla_de_plantas(tabla).to_csv(index=False, lineterminator="\n")
+
+
+def _a_json(valor):
+    """Valores comunes de Python y `None` para lo vacío, `NaN` e infinito: lo que un lector JSON estricto acepta (RF-25)."""
+    if isinstance(valor, dict):
+        return {str(clave): _a_json(contenido) for clave, contenido in valor.items()}
+    if isinstance(valor, (list, tuple)):
+        return [_a_json(contenido) for contenido in valor]
+    if isinstance(valor, (bool, np.bool_)):
+        return bool(valor)
+    if isinstance(valor, (int, np.integer)):
+        return int(valor)
+    if isinstance(valor, (float, np.floating)):
+        numero = float(valor)
+        return numero if math.isfinite(numero) else None
+    return valor
+
+
+def _texto_json(documento) -> str:
+    return json.dumps(_a_json(documento), indent=2, ensure_ascii=False, allow_nan=False) + "\n"
+
+
+def resumen_json(flujo: ResultadoFlujo) -> str:
+    """El texto de `resumen.json`, con la estructura de RF-25."""
+    resumen = flujo.resultado.resumen
+    estado = flujo.estado_frio
+    estado_frio = {"origen": estado.origen, "estado": estado.estado}
+    if estado.origen == "clima":
+        estado_frio.update(periodo=estado.periodo, horas=estado.horas, cobertura=estado.cobertura, hueco_maximo=estado.hueco_maximo)
+    return _texto_json(
+        {
+            "huella": resumen.huella,
+            "resumen": {campo: getattr(resumen, campo) for campo in CAMPOS_DEL_RESUMEN},
+            "parametros": flujo.parametros,
+            "estado_frio": estado_frio,
+        }
+    )
+
+
+def advertencias_json(advertencias: list[Advertencia]) -> str:
+    """El texto de `advertencias.json`: una lista de objetos con `codigo` y `mensaje`, en el orden recibido."""
+    return _texto_json([{"codigo": a.codigo, "mensaje": a.mensaje} for a in advertencias])

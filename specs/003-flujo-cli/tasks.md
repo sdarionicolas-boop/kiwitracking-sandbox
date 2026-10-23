@@ -42,7 +42,7 @@ Lee: `spec.md` (RF-1 a RF-27), `clarificacion.md` y `plan.md`.
 
 ## Salidas
 
-- [ ] **T3.7. Contenido de los archivos de resultados.** `salida.py`.
+- [x] **T3.7. Contenido de los archivos de resultados.** `salida.py`.
   - Cubre: RF-15, RF-16, RF-25, RF-27.
   - Hecho cuando: `plantas.csv` lleva las columnas en el orden de RF-27, las demás de entrada después en su orden, las filas en el orden de entrada, y reemplaza las columnas de resultado que ya venían; sale igual aunque cambie el orden de columnas de la entrada; `resumen.json` tiene la estructura y el orden de claves de RF-25, escribe `null` para los vacíos, `NaN` e infinitos, números comunes para los tipos de NumPy y los decimales completos, y se lee con un lector estricto devolviendo los mismos valores; `advertencias.json` es una lista de objetos `codigo` y `mensaje` en el orden de RF-14; todos los archivos son UTF-8 sin BOM y con `\n`.
 
