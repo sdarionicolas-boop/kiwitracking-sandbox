@@ -4,17 +4,19 @@ No importa `argparse` ni imprime: recibe valores y devuelve datos, para probarse
 nada propio: lee archivos y llama a las funciones que ya existen.
 """
 
+import inspect
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import pandas as pd
 from shapely.geometry.base import BaseGeometry
 
+from kiwitracking.analisis import analizar
 from kiwitracking.campana import estado_frio_de_campana
 from kiwitracking.clima import calcular_clima
 from kiwitracking.clima_parametros import ParametrosClima
 from kiwitracking.io import a_wgs84, cruzar_con_malla, leer_csv, leer_poligono_geojson
-from kiwitracking.resultado import Advertencia, ErrorDeEntrada
+from kiwitracking.resultado import Advertencia, ErrorDeEntrada, Resultado
 from kiwitracking.visualizacion import crear_mapa, preparar_mapa
 
 
@@ -174,4 +176,66 @@ def elegir_estado_de_frio(clima, estado_frio: str | None, campana: int | None, p
         cobertura=elegido.cobertura,
         hueco_maximo=elegido.hueco_maximo,
         advertencias=resultado.advertencias + elegido.advertencias,
+    )
+
+
+PARAMETROS_DE_ANALISIS = ("correccion", "alfa", "min_plantas_grupo", "p_ambiente", "p_estabilidad", "escalar_std", "prueba_t")
+ADVERTENCIAS_DE_HUELLA = ("FALTA_CONFIRMACION", "HUELLA_NO_COINCIDE")
+
+
+@dataclass
+class ResultadoFlujo:
+    """El análisis completo: el resultado de la spec 001, el estado de frío usado, todos los avisos y los parámetros."""
+
+    resultado: Resultado
+    estado_frio: EstadoDeFrio
+    advertencias: list[Advertencia]
+    parametros: dict
+
+
+def _parametros_usados(solicitud: SolicitudAnalisis) -> dict:
+    """Los valores por defecto de `analizar()` y de `ParametrosClima`, con lo indicado encima (nada se copia)."""
+    firma = inspect.signature(analizar).parameters
+    parametros = {nombre: firma[nombre].default for nombre in PARAMETROS_DE_ANALISIS}
+    parametros.update(solicitud.parametros_analisis)
+    if solicitud.clima is not None:
+        clima = ParametrosClima(**solicitud.parametros_clima, campana=solicitud.campana)
+        parametros["clima"] = {
+            "ventana_frio": clima.ventana_frio,
+            "formato_fecha": clima.formato_fecha,
+            "cobertura_minima": clima.cobertura_minima,
+            "max_hueco_dias": clima.max_hueco_dias,
+            "campana": clima.campana,
+        }
+    return parametros
+
+
+def ejecutar_analisis(
+    ruta_plantas, ruta_malla, crs_plantas: str | None, solicitud: SolicitudAnalisis, columna_x: str = "X", columna_y: str = "Y"
+) -> ResultadoFlujo:
+    """Corre el análisis completo y exige que la huella corresponda al lote (RF-8, RF-9, RF-14).
+
+    En la spec 001 una huella ausente o incorrecta no es un error: el análisis corre sin corrección y avisa.
+    Acá es más estricto: ese aviso se convierte en un error de entrada, porque la huella prueba que se vio
+    el mapa del mismo lote. El núcleo no cambia.
+    """
+    preparadas = preparar_plantas(ruta_plantas, ruta_malla, crs_plantas, columna_x, columna_y)
+    estado = elegir_estado_de_frio(solicitud.clima, solicitud.estado_frio, solicitud.campana, solicitud.parametros_clima)
+    resultado = analizar(
+        preparadas.tabla,
+        huella_confirmada=solicitud.huella,
+        estado_frio_ultima_campana=estado.estado,
+        **solicitud.parametros_analisis,
+    )
+    if any(a.codigo in ADVERTENCIAS_DE_HUELLA for a in resultado.advertencias):
+        raise ErrorDeEntrada(
+            "La huella no corresponde a estos datos: el conjunto de plantas bajo malla es distinto del que mostró `mapa`. "
+            "Revisá que usaste los mismos --plantas, --malla y --crs-plantas en los dos comandos y que los archivos no "
+            "cambiaron. Corré `mapa` de nuevo y copiá la huella nueva."
+        )
+    return ResultadoFlujo(
+        resultado=resultado,
+        estado_frio=estado,
+        advertencias=preparadas.advertencias + estado.advertencias + resultado.advertencias,
+        parametros=_parametros_usados(solicitud),
     )

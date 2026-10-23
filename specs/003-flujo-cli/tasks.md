@@ -36,7 +36,7 @@ Lee: `spec.md` (RF-1 a RF-27), `clarificacion.md` y `plan.md`.
   - Cubre: RF-10, RF-12, RF-13, RF-14.
   - Hecho cuando: con clima y `campana=2024` sobre el clima real el estado es "Óptimo" del período 2024; sin `campana` es "Adecuado" de 2025 con `CAMPANA_NO_INDICADA`; con un clima sin ventana clasificable el análisis corre sin estado y salen `SIN_PERIODO_CLASIFICABLE` y después `SIN_ESTADO_FRIO`; una campaña inexistente o no clasificable da el error de la spec 002; con `--estado-frio` el origen es `manual`; sin ninguno el origen es `ninguno` y sale `SIN_ESTADO_FRIO`; las advertencias salen en el orden de RF-14: cruce, clima, campaña, análisis.
 
-- [ ] **T3.6. Análisis y control de la huella.** `flujo.ejecutar_analisis`.
+- [x] **T3.6. Análisis y control de la huella.** `flujo.ejecutar_analisis`.
   - Cubre: RF-8 (huella incorrecta), RF-9.
   - Hecho cuando: con la huella correcta devuelve el resultado de `analizar()`; con una huella incorrecta o ausente (`HUELLA_NO_COINCIDE` o `FALTA_CONFIRMACION`), en cualquier modo de corrección incluido `forzar`, da un `ErrorDeEntrada` cuyo mensaje dice que el conjunto de plantas bajo malla es distinto, que se revisen `--plantas`, `--malla` y `--crs-plantas` y que se corra `mapa` de nuevo, y **no** contiene la huella correcta; el núcleo no se modifica.
 

@@ -1,5 +1,6 @@
 """Flujo de la línea de comandos sin consola (spec 003): lectura de plantas y malla (T3.2, RF-2 a RF-5)."""
 
+import inspect
 import json
 import re
 from pathlib import Path
@@ -9,10 +10,11 @@ import pytest
 from pyproj import Transformer
 from shapely.geometry import box, mapping
 
+from kiwitracking.analisis import analizar
 from kiwitracking.campana import estado_frio_de_campana
 from kiwitracking.clima import calcular_clima
 from kiwitracking.clima_parametros import ParametrosClima
-from kiwitracking.flujo import ejecutar_mapa, elegir_estado_de_frio, preparar_plantas
+from kiwitracking.flujo import SolicitudAnalisis, ejecutar_analisis, ejecutar_mapa, elegir_estado_de_frio, preparar_plantas
 from kiwitracking.huella import huella
 from kiwitracking.resultado import ErrorDeEntrada
 
@@ -452,3 +454,145 @@ def test_rf20_leer_el_clima_no_modifica_el_archivo():
     elegir_estado_de_frio(CLIMA_REAL, None, 2024, {})
 
     assert CLIMA_REAL.read_bytes() == antes
+
+
+# --- T3.6: análisis y control de la huella (RF-8, RF-9, RF-14) -------------------------------------------
+
+
+def _huella_del_lote(plantas, malla, crs="EPSG:4326"):
+    return huella(preparar_plantas(plantas, malla, crs).tabla)
+
+
+def _pedido(huella_indicada, clima=None, estado_frio=None, campana=None, parametros_analisis=None, parametros_clima=None):
+    return SolicitudAnalisis(huella_indicada, clima, estado_frio, campana, parametros_analisis or {}, parametros_clima or {})
+
+
+def _analisis(plantas, malla, pedido, crs="EPSG:4326"):
+    return ejecutar_analisis(plantas, malla, crs, pedido)
+
+
+def test_rf8_con_la_huella_correcta_devuelve_el_mismo_resultado_que_analizar(plantas, malla):
+    correcta = _huella_del_lote(plantas, malla)
+
+    flujo = _analisis(plantas, malla, _pedido(correcta, estado_frio="Adecuado"))
+
+    directo = analizar(preparar_plantas(plantas, malla, "EPSG:4326").tabla, huella_confirmada=correcta, estado_frio_ultima_campana="Adecuado")
+    pd.testing.assert_frame_equal(flujo.resultado.tabla, directo.tabla)
+    assert flujo.resultado.resumen == directo.resumen and flujo.resultado.resumen.huella == correcta
+
+
+def test_rf8_una_huella_incorrecta_da_un_error_que_explica_la_causa_y_no_imprime_la_correcta(plantas, malla):
+    correcta = _huella_del_lote(plantas, malla)
+
+    with pytest.raises(ErrorDeEntrada) as error:
+        _analisis(plantas, malla, _pedido("000000000000", estado_frio="Adecuado"))
+
+    mensaje = str(error.value)
+    assert "no corresponde" in mensaje and "mapa" in mensaje
+    assert "--plantas" in mensaje and "--malla" in mensaje and "--crs-plantas" in mensaje
+    assert correcta not in mensaje
+
+
+@pytest.mark.parametrize("modo", ["auto", "forzar", "desactivar"])
+def test_rf8_una_huella_incorrecta_da_error_en_cualquier_modo_de_correccion_incluido_forzar(plantas, malla, modo):
+    with pytest.raises(ErrorDeEntrada, match="no corresponde"):
+        _analisis(plantas, malla, _pedido("000000000000", estado_frio="Adecuado", parametros_analisis={"correccion": modo}))
+
+
+def test_rf8_una_huella_ausente_en_el_nucleo_tambien_es_un_error(plantas, malla):
+    with pytest.raises(ErrorDeEntrada):
+        _analisis(plantas, malla, _pedido("", estado_frio="Adecuado"))
+
+
+def test_rf8_una_huella_con_espacios_de_mas_se_acepta_como_la_correcta(plantas, malla):
+    # el núcleo recorta los espacios de la huella confirmada (spec 001): copiarla con un espacio no bloquea
+    flujo = _analisis(plantas, malla, _pedido(f"  {_huella_del_lote(plantas, malla)} ", estado_frio="Adecuado"))
+
+    assert flujo.resultado.resumen.huella == _huella_del_lote(plantas, malla)
+
+
+def test_rf9_los_parametros_indicados_llegan_a_analizar(plantas, malla):
+    correcta = _huella_del_lote(plantas, malla)
+
+    desactivada = _analisis(plantas, malla, _pedido(correcta, estado_frio="Adecuado", parametros_analisis={"correccion": "desactivar"}))
+    forzada = _analisis(plantas, malla, _pedido(correcta, estado_frio="Adecuado", parametros_analisis={"correccion": "forzar", "prueba_t": "student"}))
+
+    assert desactivada.resultado.resumen.correccion_aplicada is False
+    assert forzada.resultado.resumen.correccion_aplicada is True and forzada.resultado.resumen.prueba_t == "student"
+
+
+def test_rf9_los_parametros_usados_son_los_valores_por_defecto_de_analizar_mas_lo_indicado(plantas, malla):
+    correcta = _huella_del_lote(plantas, malla)
+
+    sin_indicar = _analisis(plantas, malla, _pedido(correcta, estado_frio="Adecuado")).parametros
+    con_indicados = _analisis(
+        plantas, malla, _pedido(correcta, estado_frio="Adecuado", parametros_analisis={"alfa": 0.01, "p_ambiente": (30.0, 60.0)})
+    ).parametros
+
+    firma = inspect.signature(analizar).parameters
+    por_defecto = {n: firma[n].default for n in ("correccion", "alfa", "min_plantas_grupo", "p_ambiente", "p_estabilidad", "escalar_std", "prueba_t")}
+    assert sin_indicar == por_defecto
+    assert con_indicados == {**por_defecto, "alfa": 0.01, "p_ambiente": (30.0, 60.0)}
+    assert "clima" not in sin_indicar
+
+
+def test_rf9_con_clima_los_parametros_usados_traen_la_seccion_clima_con_los_valores_por_defecto_y_lo_indicado(plantas, malla):
+    correcta = _huella_del_lote(plantas, malla)
+
+    flujo = _analisis(plantas, malla, _pedido(correcta, clima=CLIMA_REAL, campana=2024, parametros_clima={"cobertura_minima": 0.8}))
+
+    por_defecto = ParametrosClima()
+    assert flujo.parametros["clima"] == {
+        "ventana_frio": por_defecto.ventana_frio, "formato_fecha": por_defecto.formato_fecha, "cobertura_minima": 0.8,
+        "max_hueco_dias": por_defecto.max_hueco_dias, "campana": 2024,
+    }
+
+
+def test_rf10_con_clima_el_estado_elegido_alimenta_el_analisis_y_se_informa(plantas, malla):
+    correcta = _huella_del_lote(plantas, malla)
+
+    flujo = _analisis(plantas, malla, _pedido(correcta, clima=CLIMA_REAL, campana=2024))
+
+    assert (flujo.estado_frio.origen, flujo.estado_frio.estado, flujo.estado_frio.periodo) == ("clima", "Óptimo", 2024)
+    assert "SIN_ESTADO_FRIO" not in [a.codigo for a in flujo.advertencias]
+
+
+def test_rf12_sin_estado_de_frio_sale_el_aviso_de_la_spec_001(plantas, malla):
+    flujo = _analisis(plantas, malla, _pedido(_huella_del_lote(plantas, malla)))
+
+    assert flujo.estado_frio.origen == "ninguno"
+    assert "SIN_ESTADO_FRIO" in [a.codigo for a in flujo.advertencias]
+
+
+def test_rf13_sin_ventana_clasificable_salen_los_dos_avisos_primero_la_causa_y_despues_la_consecuencia(tmp_path, plantas, malla):
+    corto = _clima_corto(tmp_path, ["2024-07-01", "2024-07-02", "2024-07-03"])
+
+    flujo = _analisis(plantas, malla, _pedido(_huella_del_lote(plantas, malla), clima=corto))
+
+    codigos = [a.codigo for a in flujo.advertencias]
+    assert codigos.index("SIN_PERIODO_CLASIFICABLE") < codigos.index("SIN_ESTADO_FRIO")
+
+
+def test_rf13_una_campana_inexistente_da_el_error_de_la_spec_002_antes_del_analisis(plantas, malla):
+    with pytest.raises(ErrorDeEntrada, match="2010"):
+        _analisis(plantas, malla, _pedido("000000000000", clima=CLIMA_REAL, campana=2010))
+
+
+def test_rf14_las_advertencias_van_en_el_orden_cruce_clima_campana_analisis(tmp_path):
+    repetidas = _escribir_csv(tmp_path / "repetidas.csv", CSV_PLANTAS + "2,0.50,0.03,-57.95,-37.95\n")  # análisis: ID_DUPLICADO
+    lejos = _escribir_malla(tmp_path / "lejos.geojson", box(10.0, 10.0, 10.1, 10.1))  # cruce: POSIBLE_ERROR_COORDENADAS
+    correcta = _huella_del_lote(repetidas, lejos)
+
+    flujo = _analisis(repetidas, lejos, _pedido(correcta, clima=CLIMA_REAL))  # clima: PERIODO_INCOMPLETO; campaña: CAMPANA_NO_INDICADA
+
+    codigos = [a.codigo for a in flujo.advertencias]
+    assert codigos.index("POSIBLE_ERROR_COORDENADAS") < codigos.index("PERIODO_INCOMPLETO")
+    assert codigos.index("PERIODO_INCOMPLETO") < codigos.index("CAMPANA_NO_INDICADA") < codigos.index("ID_DUPLICADO")
+
+
+def test_rf20_el_analisis_no_modifica_los_archivos_de_entrada(plantas, malla):
+    antes = (plantas.read_bytes(), malla.read_bytes(), CLIMA_REAL.read_bytes())
+
+    _analisis(plantas, malla, _pedido(_huella_del_lote(plantas, malla), clima=CLIMA_REAL, campana=2024))
+
+    assert (plantas.read_bytes(), malla.read_bytes(), CLIMA_REAL.read_bytes()) == antes
