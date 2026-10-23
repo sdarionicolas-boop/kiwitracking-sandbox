@@ -10,8 +10,9 @@ from pathlib import Path
 import pandas as pd
 from shapely.geometry.base import BaseGeometry
 
-from kiwitracking.io import cruzar_con_malla, leer_csv, leer_poligono_geojson
+from kiwitracking.io import a_wgs84, cruzar_con_malla, leer_csv, leer_poligono_geojson
 from kiwitracking.resultado import Advertencia, ErrorDeEntrada
+from kiwitracking.visualizacion import crear_mapa, preparar_mapa
 
 
 @dataclass
@@ -70,3 +71,51 @@ def preparar_plantas(
             )
     tabla = tabla.assign(bajo_malla=bajo_malla)
     return PlantasPreparadas(tabla, poligono, crs_poligono, advertencias)
+
+
+@dataclass
+class ResultadoMapa:
+    """Lo que informa el comando `mapa`: la huella del lote, los grupos y los avisos."""
+
+    ruta: Path
+    huella: str
+    n_bajo_malla: int
+    n_fuera_de_malla: int
+    advertencias: list[Advertencia] = field(default_factory=list)
+
+
+def ejecutar_mapa(
+    ruta_plantas,
+    ruta_malla,
+    crs_plantas: str | None,
+    ruta_salida,
+    sin_fondo_satelital: bool = False,
+    sobrescribir: bool = False,
+    columna_x: str = "X",
+    columna_y: str = "Y",
+) -> ResultadoMapa:
+    """Genera el mapa de verificación y devuelve la huella del lote (RF-6, RF-7, RF-23).
+
+    El mapa se dibuja con plantas y polígono convertidos a EPSG:4326; la conversión es solo para dibujar y no
+    cambia `bajo_malla` ni la huella. No crea nada si algo falla antes de dibujar.
+    """
+    salida = Path(ruta_salida)
+    if salida.is_dir():
+        raise ErrorDeEntrada(f"{salida.name} es una carpeta: indicá un archivo HTML para el mapa.")
+    if salida.exists() and not sobrescribir:
+        raise ErrorDeEntrada(f"El archivo {salida.name} ya existe: usá --sobrescribir para reemplazarlo.")
+
+    preparadas = preparar_plantas(ruta_plantas, ruta_malla, crs_plantas, columna_x, columna_y)
+    plantas, poligono = a_wgs84(preparadas.tabla, preparadas.poligono, crs_plantas, preparadas.crs_poligono, columna_x, columna_y)
+    datos = preparar_mapa(plantas, poligono, columna_x, columna_y)
+    mapa = crear_mapa(datos, fondo_satelital=not sin_fondo_satelital)
+
+    salida.parent.mkdir(parents=True, exist_ok=True)
+    mapa.save(str(salida))
+    return ResultadoMapa(
+        ruta=salida,
+        huella=datos.huella,
+        n_bajo_malla=datos.n_bajo_malla,
+        n_fuera_de_malla=datos.n_fuera_de_malla,
+        advertencias=preparadas.advertencias + datos.advertencias,
+    )

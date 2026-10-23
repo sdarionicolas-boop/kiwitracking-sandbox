@@ -7,6 +7,8 @@ en el mismo proceso; `__main__.py` y el punto de entrada de `pyproject.toml` lo 
 import argparse
 import sys
 
+from kiwitracking.flujo import ejecutar_mapa
+
 PROGRAMA = "kiwitracking"
 
 
@@ -86,7 +88,28 @@ def main(argv: list[str] | None = None) -> int:
     if argumentos.comando is None:
         parser.print_help(sys.stderr)
         return 2
+    if argumentos.comando == "mapa":
+        return _comando_mapa(argumentos)
     raise NotImplementedError(f"El comando {argumentos.comando} todavía no está implementado.")
+
+
+def _comando_mapa(argumentos) -> int:
+    resultado = ejecutar_mapa(
+        argumentos.plantas,
+        argumentos.malla,
+        argumentos.crs_plantas,
+        argumentos.salida or "mapa.html",
+        sin_fondo_satelital=argumentos.sin_fondo_satelital,
+        sobrescribir=argumentos.sobrescribir,
+    )
+    print(f"Mapa guardado en {resultado.ruta}")
+    print(f"Plantas bajo malla: {resultado.n_bajo_malla}")
+    print(f"Plantas fuera de malla: {resultado.n_fuera_de_malla}")
+    print(f"Huella: {resultado.huella}")
+    print("Revisá el mapa y, si la malla está donde corresponde, copiá la huella en: kiwitracking analizar --huella <huella>")
+    for advertencia in resultado.advertencias:
+        print(f"Advertencia {advertencia.codigo}: {advertencia.mensaje}")
+    return 0
 
 
 if __name__ == "__main__":  # pragma: no cover

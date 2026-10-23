@@ -1,13 +1,15 @@
 """Flujo de la línea de comandos sin consola (spec 003): lectura de plantas y malla (T3.2, RF-2 a RF-5)."""
 
 import json
+import re
 
 import pandas as pd
 import pytest
 from pyproj import Transformer
 from shapely.geometry import box, mapping
 
-from kiwitracking.flujo import preparar_plantas
+from kiwitracking.flujo import ejecutar_mapa, preparar_plantas
+from kiwitracking.huella import huella
 from kiwitracking.resultado import ErrorDeEntrada
 
 CSV_PLANTAS = (
@@ -205,5 +207,127 @@ def test_rf20_leer_y_cruzar_no_modifica_los_archivos_de_entrada(plantas, malla):
     antes = (plantas.read_bytes(), malla.read_bytes())
 
     preparar_plantas(plantas, malla, "EPSG:4326")
+
+    assert (plantas.read_bytes(), malla.read_bytes()) == antes
+
+
+# --- T3.3: comando mapa (RF-6, RF-7, RF-23) ---------------------------------------------------------
+
+def _mapa(tmp_path, plantas, malla, crs="EPSG:4326", salida=None, **opciones):
+    opciones.setdefault("sin_fondo_satelital", True)
+    return ejecutar_mapa(plantas, malla, crs, salida or tmp_path / "mapa.html", **opciones)
+
+
+def test_rf6_genera_el_html_y_devuelve_la_huella_de_la_tabla_preparada(tmp_path, plantas, malla):
+    resultado = _mapa(tmp_path, plantas, malla)
+
+    assert (tmp_path / "mapa.html").is_file()
+    assert resultado.huella == huella(preparar_plantas(plantas, malla, "EPSG:4326").tabla)
+
+
+def test_rf6_cuenta_las_plantas_bajo_malla_y_fuera_de_malla(tmp_path, plantas, malla):
+    resultado = _mapa(tmp_path, plantas, malla)
+
+    assert (resultado.n_bajo_malla, resultado.n_fuera_de_malla) == (3, 2)
+
+
+def test_rf6_incluye_las_advertencias_del_cruce_y_las_del_mapa(tmp_path):
+    repetida = CSV_PLANTAS + "2,0.50,0.03,-57.95,-37.95\n"  # fila idéntica a la de la planta 2
+    ruta = _escribir_csv(tmp_path / "repetidas.csv", repetida)
+    lejos = _escribir_malla(tmp_path / "lejos.geojson", box(10.0, 10.0, 10.1, 10.1))
+
+    resultado = _mapa(tmp_path, ruta, lejos)
+
+    codigos = [a.codigo for a in resultado.advertencias]
+    assert "POSIBLE_ERROR_COORDENADAS" in codigos and "ID_DUPLICADO" in codigos
+    assert codigos.index("POSIBLE_ERROR_COORDENADAS") < codigos.index("ID_DUPLICADO")  # primero el cruce
+
+
+def test_rf23_el_mapa_dibuja_longitud_y_latitud_aunque_las_plantas_esten_en_metros(tmp_path, malla):
+    ida = Transformer.from_crs("EPSG:4326", "EPSG:22185", always_xy=True)
+    base = pd.read_csv(_escribir_csv(tmp_path / "base.csv"))
+    x, y = ida.transform(base["X"].to_numpy(), base["Y"].to_numpy())
+    proyectadas = tmp_path / "proyectadas.csv"
+    base.assign(X=x, Y=y).to_csv(proyectadas, index=False)
+
+    resultado = _mapa(tmp_path, proyectadas, malla, crs="EPSG:22185")
+
+    html = (tmp_path / "mapa.html").read_text(encoding="utf-8")
+    pares = [(float(a), float(b)) for a, b in re.findall(r"\[(-?\d+\.\d+), (-?\d+\.\d+)\]", html)]
+    assert len(pares) >= 5 and all(abs(a) <= 180 and abs(b) <= 180 for a, b in pares)
+    assert resultado.n_bajo_malla + resultado.n_fuera_de_malla == 5
+
+
+def test_rf23_la_conversion_para_dibujar_no_cambia_la_huella(tmp_path, malla):
+    # Sin la planta 5, que está en el borde: tras convertir de sistema el redondeo la puede mover de lado.
+    sin_borde = "".join(linea + chr(10) for linea in CSV_PLANTAS.strip().splitlines()[:-1])
+    en_grados = _escribir_csv(tmp_path / "grados.csv", sin_borde)
+    ida = Transformer.from_crs("EPSG:4326", "EPSG:22185", always_xy=True)
+    base = pd.read_csv(en_grados)
+    x, y = ida.transform(base["X"].to_numpy(), base["Y"].to_numpy())
+    en_metros = tmp_path / "metros.csv"
+    base.assign(X=x, Y=y).to_csv(en_metros, index=False)
+
+    con_grados = _mapa(tmp_path, en_grados, malla, salida=tmp_path / "a.html")
+    con_metros = _mapa(tmp_path, en_metros, malla, crs="EPSG:22185", salida=tmp_path / "b.html")
+
+    assert con_metros.huella == con_grados.huella
+    assert (con_metros.n_bajo_malla, con_metros.n_fuera_de_malla) == (2, 2)
+
+
+def test_rf7_sin_fondo_satelital_el_html_no_pide_teselas_y_con_fondo_si(tmp_path, plantas, malla):
+    _mapa(tmp_path, plantas, malla, salida=tmp_path / "sin.html")
+    _mapa(tmp_path, plantas, malla, salida=tmp_path / "con.html", sin_fondo_satelital=False)
+
+    assert "arcgisonline" not in (tmp_path / "sin.html").read_text(encoding="utf-8")
+    assert "arcgisonline" in (tmp_path / "con.html").read_text(encoding="utf-8")
+
+
+def test_rf6_si_el_mapa_ya_existe_y_no_se_indica_sobrescribir_da_un_error_sin_tocarlo(tmp_path, plantas, malla):
+    existente = tmp_path / "mapa.html"
+    existente.write_text("mapa anterior", encoding="utf-8")
+
+    with pytest.raises(ErrorDeEntrada) as error:
+        _mapa(tmp_path, plantas, malla)
+
+    assert "mapa.html" in str(error.value) and "--sobrescribir" in str(error.value)
+    assert existente.read_text(encoding="utf-8") == "mapa anterior"
+
+
+def test_rf6_con_sobrescribir_reemplaza_el_mapa_existente(tmp_path, plantas, malla):
+    existente = tmp_path / "mapa.html"
+    existente.write_text("mapa anterior", encoding="utf-8")
+
+    _mapa(tmp_path, plantas, malla, sobrescribir=True)
+
+    assert "mapa anterior" not in existente.read_text(encoding="utf-8")
+
+
+def test_rf6_crea_la_carpeta_del_mapa_si_no_existe(tmp_path, plantas, malla):
+    destino = tmp_path / "salidas" / "nueva" / "mapa.html"
+
+    _mapa(tmp_path, plantas, malla, salida=destino)
+
+    assert destino.is_file()
+
+
+def test_rf6_si_la_salida_es_una_carpeta_da_un_error(tmp_path, plantas, malla):
+    with pytest.raises(ErrorDeEntrada) as error:
+        _mapa(tmp_path, plantas, malla, salida=tmp_path)
+
+    assert "carpeta" in str(error.value)
+
+
+def test_rf6_si_falla_la_lectura_no_se_crea_ningun_archivo(tmp_path, malla):
+    with pytest.raises(ErrorDeEntrada):
+        _mapa(tmp_path, tmp_path / "no_existe.csv", malla)
+
+    assert not (tmp_path / "mapa.html").exists()
+
+
+def test_rf20_generar_el_mapa_no_modifica_los_archivos_de_entrada(tmp_path, plantas, malla):
+    antes = (plantas.read_bytes(), malla.read_bytes())
+
+    _mapa(tmp_path, plantas, malla)
 
     assert (plantas.read_bytes(), malla.read_bytes()) == antes

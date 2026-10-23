@@ -22,7 +22,7 @@ Lee: `spec.md` (RF-1 a RF-27), `clarificacion.md` y `plan.md`.
   - Cubre: RF-2, RF-3, RF-4, RF-5.
   - Hecho cuando: un archivo que no existe da un error que nombra el archivo; con `--malla` se exige `--crs-plantas` y se calcula `bajo_malla` con el cruce de la spec 001, incluidas sus advertencias; sin `--malla` se usa `bajo_malla` del CSV, y si no está da un error que pide la malla o esa columna; con `--malla` y `bajo_malla` en el CSV gana el cálculo y sale `BAJO_MALLA_REEMPLAZADO` con la cantidad de plantas que cambiaron.
 
-- [ ] **T3.3. Comando `mapa`.** `flujo.ejecutar_mapa` y el subcomando.
+- [x] **T3.3. Comando `mapa`.** `flujo.ejecutar_mapa` y el subcomando.
   - Cubre: RF-6, RF-7, RF-26 (línea de la huella), RF-23 (integración).
   - Hecho cuando: genera el HTML dibujando plantas y polígono convertidos; imprime la huella en una línea propia `Huella: <12 caracteres>`, la cantidad de plantas bajo malla y fuera, y las advertencias; la huella es igual a `huella()` de la tabla preparada; con `--sin-fondo-satelital` el HTML no contiene la dirección de las teselas; si el archivo existe y no se indicó `--sobrescribir`, da un error sin tocarlo; con `--sobrescribir` lo reemplaza.
 
