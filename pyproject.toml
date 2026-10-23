@@ -19,6 +19,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 
+[project.scripts]
+kiwitracking = "kiwitracking.cli:main"
+
 [tool.setuptools]
 packages = ["kiwitracking"]
 

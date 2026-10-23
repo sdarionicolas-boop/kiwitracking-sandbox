@@ -49,7 +49,7 @@ El resto de los parámetros de la spec 002 (`tbase`, `umbral_frio`, `meses_frio`
 ## Requisitos funcionales
 
 **Comandos y ayuda**
-- **RF-1.** El sistema DEBE ofrecer el programa `kiwitracking` con los subcomandos `mapa` y `analizar`. SI se ejecuta sin subcomando o con `--help`, ENTONCES DEBE mostrar una ayuda en español que liste los subcomandos y sus opciones. SI el subcomando no existe, ENTONCES DEBE terminar con un error de uso (RF-19).
+- **RF-1.** El sistema DEBE ofrecer el programa `kiwitracking` con los subcomandos `mapa` y `analizar`. SI se ejecuta sin subcomando o con `--help`, ENTONCES DEBE mostrar una ayuda en español que liste los subcomandos y sus opciones. SI se ejecuta sin subcomando, la ayuda sale por la salida de errores y el código es 2; con `--help` sale por la salida estándar y el código es 0. SI el subcomando no existe, ENTONCES DEBE terminar con un error de uso (RF-19).
 
 **Lectura de las plantas y la malla**
 - **RF-2.** El sistema DEBE leer el CSV de plantas con la lectura de la spec 001 (UTF-8, tolera el BOM de Excel; RF-3 y RF-4 de esa spec). SI el archivo no existe, ENTONCES DEBE terminar con un error que nombre el archivo.

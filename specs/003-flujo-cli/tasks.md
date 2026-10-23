@@ -6,7 +6,7 @@ Lee: `spec.md` (RF-1 a RF-27), `clarificacion.md` y `plan.md`.
 
 ## Esqueleto
 
-- [ ] **T3.0. Programa y ayuda.** `cli.py`, `__main__.py`, `pyproject.toml`.
+- [x] **T3.0. Programa y ayuda.** `cli.py`, `__main__.py`, `pyproject.toml`.
   - Cubre: RF-1.
   - Hecho cuando: `main([])` y `main(["--help"])` muestran una ayuda en español con los subcomandos `mapa` y `analizar` y sus opciones; un subcomando desconocido da el error de uso (código 2); `main` devuelve el código y no llama a `sys.exit`; `pyproject.toml` declara el punto de entrada `kiwitracking`; un test corre `python -m kiwitracking --help` en un proceso aparte y comprueba código 0 y la ayuda.
 
