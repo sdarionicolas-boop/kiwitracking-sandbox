@@ -6,7 +6,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import shapely
-from pyproj import Transformer
+from pyproj import CRS, Transformer
+from pyproj.exceptions import CRSError
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import unary_union
@@ -138,3 +139,51 @@ def leer_poligono_geojson(ruta: str | Path) -> tuple[BaseGeometry, str]:
 
     crs = (contenido.get("crs") or {}).get("properties", {}).get("name") or "EPSG:4326"
     return unary_union(poligonos), crs
+
+
+WGS84 = "EPSG:4326"
+
+
+def _sistema(crs: str | None) -> CRS | None:
+    """El sistema de coordenadas declarado, o `None` si no se declaró. Un nombre desconocido es un error."""
+    if crs is None or not str(crs).strip():
+        return None
+    try:
+        return CRS.from_user_input(str(crs).strip())
+    except CRSError as error:
+        raise ErrorDeEntrada(
+            f"El sistema de coordenadas {str(crs).strip()!r} no se reconoce. Usá un código como 'EPSG:4326'."
+        ) from error
+
+
+def a_wgs84(
+    plantas: pd.DataFrame,
+    poligono: BaseGeometry | None,
+    crs_plantas: str | None,
+    crs_poligono: str | None,
+    columna_x: str = "X",
+    columna_y: str = "Y",
+) -> tuple[pd.DataFrame, BaseGeometry | None]:
+    """Plantas y polígono en longitud y latitud (EPSG:4326), solo para dibujar el mapa (RF-23).
+
+    Devuelve copias: no modifica la tabla de entrada ni toca `bajo_malla`, la huella o el análisis.
+    Un sistema no declarado (`None`) se toma como longitud y latitud y no se convierte. Una coordenada
+    vacía sigue vacía, no se vuelve infinita.
+    """
+    destino = CRS.from_user_input(WGS84)
+    origen_plantas, origen_poligono = _sistema(crs_plantas), _sistema(crs_poligono)  # validan los dos antes de convertir
+
+    convertidas = plantas.copy()
+    if origen_plantas is not None and not origen_plantas.equals(destino, ignore_axis_order=True):
+        ida = Transformer.from_crs(origen_plantas, destino, always_xy=True)
+        x = plantas[columna_x].to_numpy(dtype=float)
+        y = plantas[columna_y].to_numpy(dtype=float)
+        validas = ~(np.isnan(x) | np.isnan(y))
+        x_nuevo, y_nuevo = np.full(len(x), np.nan), np.full(len(y), np.nan)
+        x_nuevo[validas], y_nuevo[validas] = ida.transform(x[validas], y[validas])
+        convertidas[columna_x], convertidas[columna_y] = x_nuevo, y_nuevo
+
+    if poligono is not None and origen_poligono is not None and not origen_poligono.equals(destino, ignore_axis_order=True):
+        ida = Transformer.from_crs(origen_poligono, destino, always_xy=True)
+        poligono = shapely.transform(poligono, lambda coordenadas: np.column_stack(ida.transform(coordenadas[:, 0], coordenadas[:, 1])))
+    return convertidas, poligono

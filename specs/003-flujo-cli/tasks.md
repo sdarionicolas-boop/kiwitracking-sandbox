@@ -12,7 +12,7 @@ Lee: `spec.md` (RF-1 a RF-27), `clarificacion.md` y `plan.md`.
 
 ## Coordenadas
 
-- [ ] **T3.1. Conversión a `EPSG:4326` para dibujar.** `io.a_wgs84`.
+- [x] **T3.1. Conversión a `EPSG:4326` para dibujar.** `io.a_wgs84`.
   - Cubre: RF-23.
   - Hecho cuando: con plantas y polígono en `EPSG:22185` se obtienen las coordenadas en longitud y latitud con diferencia menor que 1e-6 grados respecto del lote original; con plantas en un sistema y polígono en otro se convierten los dos; si ya están en `EPSG:4326` no cambian; devuelve copias y no modifica la tabla de entrada; no altera `bajo_malla` ni la huella (la huella no depende de las coordenadas); un sistema desconocido da un error que lo nombra.
 
