@@ -10,6 +10,9 @@ from pathlib import Path
 import pandas as pd
 from shapely.geometry.base import BaseGeometry
 
+from kiwitracking.campana import estado_frio_de_campana
+from kiwitracking.clima import calcular_clima
+from kiwitracking.clima_parametros import ParametrosClima
 from kiwitracking.io import a_wgs84, cruzar_con_malla, leer_csv, leer_poligono_geojson
 from kiwitracking.resultado import Advertencia, ErrorDeEntrada
 from kiwitracking.visualizacion import crear_mapa, preparar_mapa
@@ -134,4 +137,41 @@ def ejecutar_mapa(
         n_bajo_malla=datos.n_bajo_malla,
         n_fuera_de_malla=datos.n_fuera_de_malla,
         advertencias=preparadas.advertencias + datos.advertencias,
+    )
+
+
+@dataclass
+class EstadoDeFrio:
+    """El estado de frío que alimenta el análisis y de dónde salió: `clima`, `manual` o `ninguno` (RF-10 a RF-14)."""
+
+    origen: str
+    estado: str | None = None
+    periodo: int | None = None
+    horas: float | None = None
+    cobertura: float | None = None
+    hueco_maximo: int | None = None
+    advertencias: list[Advertencia] = field(default_factory=list)
+
+
+def elegir_estado_de_frio(clima, estado_frio: str | None, campana: int | None, parametros_clima: dict) -> EstadoDeFrio:
+    """El estado de frío de la última campaña: del clima (spec 002), escrito a mano o ninguno (RF-10 a RF-14).
+
+    Con clima, `ParametrosClima` se arma solo con los valores indicados. Si ninguna ventana es clasificable no
+    se detiene: no hay estado (origen `ninguno`) y el aviso explica por qué. Las advertencias van en el orden
+    de RF-14: primero las del clima y después las de la elección de campaña.
+    """
+    if clima is None:
+        return EstadoDeFrio("manual", estado_frio) if estado_frio is not None else EstadoDeFrio("ninguno")
+
+    tabla = leer_csv(_archivo_existente(clima))
+    resultado = calcular_clima(tabla, ParametrosClima(**parametros_clima, campana=campana))
+    elegido = estado_frio_de_campana(resultado, campana)
+    return EstadoDeFrio(
+        origen="clima" if elegido.estado is not None else "ninguno",
+        estado=elegido.estado,
+        periodo=elegido.periodo,
+        horas=elegido.horas,
+        cobertura=elegido.cobertura,
+        hueco_maximo=elegido.hueco_maximo,
+        advertencias=resultado.advertencias + elegido.advertencias,
     )

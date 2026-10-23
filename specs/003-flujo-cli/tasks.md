@@ -32,7 +32,7 @@ Lee: `spec.md` (RF-1 a RF-27), `clarificacion.md` y `plan.md`.
   - Cubre: RF-8 (falta de huella), RF-9, RF-11, RF-24.
   - Hecho cuando: sin `--huella` da un error de entrada (código 1) con el mensaje de RF-8, antes de leer archivos; `--clima` junto con `--estado-frio` es un error que dice que son excluyentes; cualquiera de las cinco opciones de clima sin `--clima` (sola o con `--estado-frio`) da un error que nombra la opción; `--estado-frio` acepta `optimo`, `ÓPTIMO` y `Óptimo` y los convierte al texto exacto, y un valor desconocido da el error de la spec 001 con los tres permitidos; cada parámetro de la spec 001 y de la spec 002 llega al núcleo, y los valores por defecto son los de `analizar()` y `ParametrosClima` (un test los compara con la firma de la función, sin copiarlos); `--p-ambiente` toma dos números y `--max-hueco-dias ninguno` pasa `None`.
 
-- [ ] **T3.5. Estado de frío del flujo.** `flujo.elegir_estado_de_frio`.
+- [x] **T3.5. Estado de frío del flujo.** `flujo.elegir_estado_de_frio`.
   - Cubre: RF-10, RF-12, RF-13, RF-14.
   - Hecho cuando: con clima y `campana=2024` sobre el clima real el estado es "Óptimo" del período 2024; sin `campana` es "Adecuado" de 2025 con `CAMPANA_NO_INDICADA`; con un clima sin ventana clasificable el análisis corre sin estado y salen `SIN_PERIODO_CLASIFICABLE` y después `SIN_ESTADO_FRIO`; una campaña inexistente o no clasificable da el error de la spec 002; con `--estado-frio` el origen es `manual`; sin ninguno el origen es `ninguno` y sale `SIN_ESTADO_FRIO`; las advertencias salen en el orden de RF-14: cruce, clima, campaña, análisis.
 

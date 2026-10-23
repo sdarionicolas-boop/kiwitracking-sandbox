@@ -2,13 +2,17 @@
 
 import json
 import re
+from pathlib import Path
 
 import pandas as pd
 import pytest
 from pyproj import Transformer
 from shapely.geometry import box, mapping
 
-from kiwitracking.flujo import ejecutar_mapa, preparar_plantas
+from kiwitracking.campana import estado_frio_de_campana
+from kiwitracking.clima import calcular_clima
+from kiwitracking.clima_parametros import ParametrosClima
+from kiwitracking.flujo import ejecutar_mapa, elegir_estado_de_frio, preparar_plantas
 from kiwitracking.huella import huella
 from kiwitracking.resultado import ErrorDeEntrada
 
@@ -331,3 +335,120 @@ def test_rf20_generar_el_mapa_no_modifica_los_archivos_de_entrada(tmp_path, plan
     _mapa(tmp_path, plantas, malla)
 
     assert (plantas.read_bytes(), malla.read_bytes()) == antes
+
+
+# --- T3.5: estado de frío del flujo (RF-10, RF-11, RF-12, RF-13, RF-14) -----------------------------------
+
+CLIMA_REAL = Path(__file__).parent / "golden" / "clima_diario.csv"
+
+
+def _clima_corto(tmp_path, fechas, nombre="corto.csv", codificacion="utf-8"):
+    cuerpo = "".join(f"{fecha},20.0,8.0\n" for fecha in fechas)
+    return _escribir_csv(tmp_path / nombre, "date,Tmax,Tmin\n" + cuerpo, codificacion)
+
+
+def _codigos_de(estado):
+    return [a.codigo for a in estado.advertencias]
+
+
+def test_rf10_con_clima_y_campana_2024_el_estado_es_optimo_del_periodo_2024():
+    estado = elegir_estado_de_frio(CLIMA_REAL, None, 2024, {})
+
+    assert (estado.origen, estado.estado, estado.periodo) == ("clima", "Óptimo", 2024)
+    assert estado.horas == pytest.approx(1128.8, abs=0.05)
+    assert "CAMPANA_NO_INDICADA" not in _codigos_de(estado)
+
+
+def test_rf10_sin_campana_es_el_ultimo_invierno_clasificable_con_su_cobertura_y_el_aviso():
+    estado = elegir_estado_de_frio(CLIMA_REAL, None, None, {})
+
+    assert (estado.origen, estado.estado, estado.periodo) == ("clima", "Adecuado", 2025)
+    assert estado.cobertura == pytest.approx(119 / 123) and estado.hueco_maximo == 4
+    assert "CAMPANA_NO_INDICADA" in _codigos_de(estado)
+
+
+def test_rf10_los_parametros_de_clima_llegan_al_calculo():
+    # Con cobertura mínima 1 el invierno 2025 (119 de 123 días) deja de ser clasificable: el último pasa a ser 2024.
+    estado = elegir_estado_de_frio(CLIMA_REAL, None, None, {"cobertura_minima": 1.0})
+
+    assert estado.periodo == 2024
+
+
+def test_rf10_el_formato_de_fecha_indicado_se_usa_al_leer_el_clima(tmp_path):
+    ruta = _clima_corto(tmp_path, ["01/07/2024", "02/07/2024", "03/07/2024"])
+
+    estado = elegir_estado_de_frio(ruta, None, None, {"formato_fecha": "%d/%m/%Y"})
+    with pytest.raises(ErrorDeEntrada):
+        elegir_estado_de_frio(ruta, None, None, {})  # sin el formato, 01/07/2024 no es AAAA-MM-DD
+
+    assert estado.estado is None  # tres días no alcanzan para ninguna ventana
+
+
+def test_rf10_el_clima_se_lee_con_la_lectura_de_la_spec_001_aunque_traiga_el_bom_de_excel(tmp_path):
+    ruta = _clima_corto(tmp_path, ["2024-07-01", "2024-07-02"], codificacion="utf-8-sig")
+
+    estado = elegir_estado_de_frio(ruta, None, None, {})
+
+    assert estado.estado is None  # se leyó sin error: la columna "date" no trae el BOM pegado
+
+
+def test_rf10_un_archivo_de_clima_que_no_existe_da_un_error_que_nombra_el_archivo(tmp_path):
+    with pytest.raises(ErrorDeEntrada) as error:
+        elegir_estado_de_frio(tmp_path / "sin_clima.csv", None, None, {})
+
+    assert "sin_clima.csv" in str(error.value)
+
+
+def test_rf13_sin_ventana_clasificable_no_se_detiene_y_avisa(tmp_path):
+    ruta = _clima_corto(tmp_path, ["2024-07-01", "2024-07-02", "2024-07-03"])
+
+    estado = elegir_estado_de_frio(ruta, None, None, {})
+
+    assert (estado.origen, estado.estado, estado.periodo) == ("ninguno", None, None)
+    assert "SIN_PERIODO_CLASIFICABLE" in _codigos_de(estado)
+
+
+def test_rf13_una_campana_sin_datos_da_el_error_de_la_spec_002():
+    with pytest.raises(ErrorDeEntrada) as error:
+        elegir_estado_de_frio(CLIMA_REAL, None, 2010, {})
+
+    assert "2010" in str(error.value)
+
+
+def test_rf13_una_campana_no_clasificable_da_el_error_con_su_cobertura_y_su_hueco():
+    with pytest.raises(ErrorDeEntrada) as error:
+        elegir_estado_de_frio(CLIMA_REAL, None, 2025, {"cobertura_minima": 1.0})
+
+    assert "2025" in str(error.value) and "cobertura" in str(error.value)
+
+
+def test_rf11_con_un_estado_a_mano_el_origen_es_manual_y_no_hay_periodo_ni_avisos():
+    estado = elegir_estado_de_frio(None, "Óptimo", None, {})
+
+    assert (estado.origen, estado.estado) == ("manual", "Óptimo")
+    assert (estado.periodo, estado.horas, estado.cobertura, estado.hueco_maximo) == (None, None, None, None)
+    assert estado.advertencias == []
+
+
+def test_rf12_sin_clima_ni_estado_el_origen_es_ninguno():
+    estado = elegir_estado_de_frio(None, None, None, {})
+
+    assert (estado.origen, estado.estado, estado.advertencias) == ("ninguno", None, [])
+
+
+def test_rf14_los_avisos_del_clima_van_antes_que_los_de_la_eleccion_de_campana():
+    clima = calcular_clima(pd.read_csv(CLIMA_REAL, encoding="utf-8"), ParametrosClima())
+    esperados = [a.codigo for a in clima.advertencias] + [a.codigo for a in estado_frio_de_campana(clima).advertencias]
+
+    estado = elegir_estado_de_frio(CLIMA_REAL, None, None, {})
+
+    assert _codigos_de(estado) == esperados
+    assert esperados.index("CAMPANA_NO_INDICADA") == len(clima.advertencias)  # el primero de la elección va tras todos los del clima
+
+
+def test_rf20_leer_el_clima_no_modifica_el_archivo():
+    antes = CLIMA_REAL.read_bytes()
+
+    elegir_estado_de_frio(CLIMA_REAL, None, 2024, {})
+
+    assert CLIMA_REAL.read_bytes() == antes
