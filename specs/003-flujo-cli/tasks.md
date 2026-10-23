@@ -28,7 +28,7 @@ Lee: `spec.md` (RF-1 a RF-27), `clarificacion.md` y `plan.md`.
 
 ## Flujo: análisis
 
-- [ ] **T3.4. Argumentos de `analizar`.** `cli.py`.
+- [x] **T3.4. Argumentos de `analizar`.** `cli.py`.
   - Cubre: RF-8 (falta de huella), RF-9, RF-11, RF-24.
   - Hecho cuando: sin `--huella` da un error de entrada (código 1) con el mensaje de RF-8, antes de leer archivos; `--clima` junto con `--estado-frio` es un error que dice que son excluyentes; cualquiera de las cinco opciones de clima sin `--clima` (sola o con `--estado-frio`) da un error que nombra la opción; `--estado-frio` acepta `optimo`, `ÓPTIMO` y `Óptimo` y los convierte al texto exacto, y un valor desconocido da el error de la spec 001 con los tres permitidos; cada parámetro de la spec 001 y de la spec 002 llega al núcleo, y los valores por defecto son los de `analizar()` y `ParametrosClima` (un test los compara con la firma de la función, sin copiarlos); `--p-ambiente` toma dos números y `--max-hueco-dias ninguno` pasa `None`.
 

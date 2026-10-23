@@ -16,6 +16,22 @@ from kiwitracking.visualizacion import crear_mapa, preparar_mapa
 
 
 @dataclass
+class SolicitudAnalisis:
+    """Lo que pidió el comando `analizar`, ya interpretado: solo los valores indicados (RF-8, RF-9, RF-11, RF-24).
+
+    Los parámetros que no se indican no figuran: sus valores por defecto son los de `analizar()` y
+    `ParametrosClima`, que quedan como única definición.
+    """
+
+    huella: str
+    clima: str | None
+    estado_frio: str | None
+    campana: int | None
+    parametros_analisis: dict
+    parametros_clima: dict
+
+
+@dataclass
 class PlantasPreparadas:
     """Las plantas con `bajo_malla` listo, y el polígono con su sistema para dibujar el mapa."""
 

@@ -6,8 +6,12 @@ en el mismo proceso; `__main__.py` y el punto de entrada de `pyproject.toml` lo 
 
 import argparse
 import sys
+import unicodedata
 
-from kiwitracking.flujo import ejecutar_mapa
+from kiwitracking.clima_parametros import ParametrosClima
+from kiwitracking.flujo import SolicitudAnalisis, ejecutar_mapa
+from kiwitracking.resultado import ErrorDeEntrada
+from kiwitracking.validacion import ESTADOS_FRIO, validar_parametros
 
 PROGRAMA = "kiwitracking"
 
@@ -75,6 +79,78 @@ def construir_parser() -> argparse.ArgumentParser:
     analizar.add_argument("--max-hueco-dias", help="Hueco máximo en días, o ninguno (con --clima).")
     analizar.add_argument("--estado-frio", help="Estado de frío escrito a mano: Deficiente, Adecuado u Óptimo.")
     return parser
+
+
+# Opciones que solo tienen sentido con --clima: (atributo de `argparse`, nombre en la línea de comandos).
+OPCIONES_DE_CLIMA = (
+    ("campana", "--campana"),
+    ("ventana_frio", "--ventana-frio"),
+    ("formato_fecha", "--formato-fecha"),
+    ("cobertura_minima", "--cobertura-minima"),
+    ("max_hueco_dias", "--max-hueco-dias"),
+)
+
+
+def _sin_tildes(texto: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFD", texto) if not unicodedata.combining(c)).casefold().strip()
+
+
+def _estado_exacto(escrito: str) -> str:
+    """El estado con su texto exacto (spec 001); uno que no coincide con ninguno da el error de valores permitidos."""
+    for estado in ESTADOS_FRIO:
+        if _sin_tildes(estado) == _sin_tildes(escrito):
+            return estado
+    validar_parametros(estado_frio_ultima_campana=escrito)
+    return escrito  # no se llega: validar_parametros ya levantó el error
+
+
+def _max_hueco_dias(valor: str) -> int | None:
+    if valor.strip().casefold() == "ninguno":
+        return None
+    try:
+        return int(valor)
+    except ValueError:
+        raise ErrorDeEntrada(f"--max-hueco-dias={valor!r} no es válido: usá un número entero de días o 'ninguno'.") from None
+
+
+def interpretar_analizar(argumentos: argparse.Namespace) -> SolicitudAnalisis:
+    """Revisa la combinación de opciones de `analizar` y deja solo lo indicado (RF-8, RF-9, RF-11, RF-24).
+
+    Todo se comprueba antes de leer ningún archivo.
+    """
+    huella = (argumentos.huella or "").strip()
+    if not huella:
+        raise ErrorDeEntrada(
+            "Falta --huella: corré primero `kiwitracking mapa`, revisá el mapa y copiá la huella que muestra."
+        )
+    if argumentos.clima is not None and argumentos.estado_frio is not None:
+        raise ErrorDeEntrada("--clima y --estado-frio son excluyentes: el estado de frío sale de uno o del otro.")
+    if argumentos.clima is None:
+        sobran = [opcion for atributo, opcion in OPCIONES_DE_CLIMA if getattr(argumentos, atributo) is not None]
+        if sobran:
+            raise ErrorDeEntrada(f"{' y '.join(sobran)} solo se usa(n) con --clima.")
+
+    parametros_analisis = {}
+    for atributo in ("correccion", "prueba_t", "alfa", "min_plantas_grupo", "p_estabilidad"):
+        if getattr(argumentos, atributo) is not None:
+            parametros_analisis[atributo] = getattr(argumentos, atributo)
+    if argumentos.p_ambiente is not None:
+        parametros_analisis["p_ambiente"] = tuple(argumentos.p_ambiente)
+    if argumentos.no_escalar_std:
+        parametros_analisis["escalar_std"] = False
+    validar_parametros(**{k: v for k, v in parametros_analisis.items() if k in ("correccion", "prueba_t")})
+
+    parametros_clima = {}
+    for atributo in ("ventana_frio", "formato_fecha", "cobertura_minima"):
+        if getattr(argumentos, atributo) is not None:
+            parametros_clima[atributo] = getattr(argumentos, atributo)
+    if argumentos.max_hueco_dias is not None:
+        parametros_clima["max_hueco_dias"] = _max_hueco_dias(argumentos.max_hueco_dias)
+    if argumentos.clima is not None:
+        ParametrosClima(**parametros_clima, campana=argumentos.campana)  # valida antes de leer el clima
+
+    estado = _estado_exacto(argumentos.estado_frio) if argumentos.estado_frio is not None else None
+    return SolicitudAnalisis(huella, argumentos.clima, estado, argumentos.campana, parametros_analisis, parametros_clima)
 
 
 def main(argv: list[str] | None = None) -> int:
