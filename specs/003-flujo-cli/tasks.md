@@ -52,7 +52,7 @@ Lee: `spec.md` (RF-1 a RF-27), `clarificacion.md` y `plan.md`.
 
 ## Línea de comandos completa
 
-- [ ] **T3.9. Pantalla y códigos de salida.** `cli.py`.
+- [x] **T3.9. Pantalla y códigos de salida.** `cli.py`.
   - Cubre: RF-18, RF-19, RF-21, RF-22, RF-26.
   - Hecho cuando: `analizar` muestra un resumen corto (cantidad de plantas, FC y si se corrigió, cantidad por recomendación, estado de frío y su origen) y las advertencias, y dice dónde quedaron los archivos; un `ErrorDeEntrada` sale por la salida de errores como `Error: <mensaje>`, sin traza, con código 1; una excepción inesperada sale como `Error inesperado: <tipo>: <mensaje>` con código 3, y con `--depurar` se muestra además la traza; el uso incorrecto da código 2; las rutas con espacios y con tildes funcionan; la pantalla no falla aunque la codificación de la consola no admita "Ó" (se reconfigura con reemplazo); dos tests corren el programa en un proceso aparte: uno con un error de entrada (código 1, mensaje en la salida de errores, sin traza) y otro con la consola forzada a ASCII (`PYTHONIOENCODING=ascii`) que termina con código 0.
 

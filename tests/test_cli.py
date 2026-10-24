@@ -188,16 +188,6 @@ def test_rf7_el_mapa_con_sin_fondo_satelital_no_pide_teselas(tmp_path, capsys):
     assert "arcgisonline" not in (tmp_path / "mapa.html").read_text(encoding="utf-8")
 
 
-def test_rf6_mapa_sin_sobrescribir_sobre_un_archivo_existente_no_lo_toca(tmp_path, capsys):
-    existente = tmp_path / "mapa.html"
-    existente.write_text("anterior", encoding="utf-8")
-
-    with pytest.raises(ErrorDeEntrada):  # hasta T3.9 (RF-19) el error sale como excepción, no como código
-        main(_argumentos_de_mapa(tmp_path))
-
-    assert existente.read_text(encoding="utf-8") == "anterior"
-
-
 def test_rf6_mapa_con_sobrescribir_reemplaza_el_archivo_existente(tmp_path, capsys):
     existente = tmp_path / "mapa.html"
     existente.write_text("anterior", encoding="utf-8")
@@ -364,3 +354,183 @@ def test_rf9_un_valor_no_permitido_de_clima_da_el_error_de_la_spec_002_antes_de_
         _solicitud("--clima", "no_existe.csv", opcion, valor)  # el archivo no existe: el error es el del valor
 
     assert permitido in str(error.value)
+
+
+# --- T3.9: pantalla y códigos de salida (RF-18, RF-19, RF-21, RF-22) ----------------------------------------
+
+
+def _argumentos_de_analizar(tmp_path, *extra, huella_indicada=None):
+    lote = pd.read_csv(GOLDEN / "datos_plantas_completos.csv", encoding="utf-8")
+    return [
+        "analizar", "--plantas", str(GOLDEN / "datos_plantas_completos.csv"),
+        "--huella", huella_indicada or huella(lote), "--salida", str(tmp_path / "resultados"), *extra,
+    ]
+
+
+def test_rf18_analizar_muestra_un_resumen_corto_y_dice_donde_quedaron_los_archivos(tmp_path, capsys):
+    codigo = main(_argumentos_de_analizar(tmp_path, "--estado-frio", "Adecuado"))
+
+    salida = capsys.readouterr().out
+    assert codigo == 0
+    assert "Plantas analizadas: 159" in salida
+    assert "Factor de corrección: 1,2262" in salida and "corrección aplicada: sí" in salida
+    assert re.search(r"Intervenir: 19\b", salida) and re.search(r"Mantener: 16\b", salida) and re.search(r"Observar: 124\b", salida)
+    assert "Estado de frío: Adecuado (indicado a mano)" in salida
+    assert str(tmp_path / "resultados") in salida
+    assert sorted(p.name for p in (tmp_path / "resultados").iterdir()) == ["advertencias.json", "plantas.csv", "resumen.json"]
+
+
+def test_rf18_con_clima_el_resumen_nombra_el_periodo_las_horas_y_la_cobertura(tmp_path, capsys):
+    main(_argumentos_de_analizar(tmp_path, "--clima", str(GOLDEN / "clima_diario.csv"), "--campana", "2024"))
+
+    salida = capsys.readouterr().out
+    assert re.search(r"Estado de frío: Óptimo \(clima, período 2024, 1128,8 h, cobertura 100,0 %\)", salida)
+
+
+def test_rf18_sin_estado_de_frio_el_resumen_lo_dice_y_se_imprimen_las_advertencias(tmp_path, capsys):
+    main(_argumentos_de_analizar(tmp_path))
+
+    salida = capsys.readouterr().out
+    assert "Estado de frío: ninguno" in salida
+    assert "Advertencia SIN_ESTADO_FRIO:" in salida
+
+
+def test_rf18_no_se_imprime_ninguna_huella_en_el_resumen_de_analizar(tmp_path, capsys):
+    main(_argumentos_de_analizar(tmp_path, "--estado-frio", "Adecuado"))
+
+    assert not [linea for linea in capsys.readouterr().out.splitlines() if linea.startswith("Huella:")]
+
+
+def test_rf19_un_error_de_entrada_sale_por_la_salida_de_errores_con_codigo_1_sin_traza(tmp_path, capsys):
+    argumentos = _argumentos_de_analizar(tmp_path, huella_indicada="000000000000")  # huella incorrecta
+
+    codigo = main(argumentos)
+
+    captura = capsys.readouterr()
+    assert codigo == 1
+    assert captura.err.startswith("Error: ") and "no corresponde" in captura.err
+    assert "Traceback" not in captura.err and captura.out == ""
+    assert not (tmp_path / "resultados").exists()  # no se escribió nada
+
+
+def test_rf19_mapa_sin_sobrescribir_sobre_un_archivo_existente_da_codigo_1_y_no_lo_toca(tmp_path, capsys):
+    existente = tmp_path / "mapa.html"
+    existente.write_text("anterior", encoding="utf-8")
+
+    codigo = main(_argumentos_de_mapa(tmp_path))
+
+    assert codigo == 1 and "mapa.html" in capsys.readouterr().err
+    assert existente.read_text(encoding="utf-8") == "anterior"
+
+
+def test_rf19_un_archivo_que_no_existe_da_codigo_1_y_nombra_el_archivo(tmp_path, capsys):
+    argumentos = _argumentos_de_analizar(tmp_path)
+    argumentos[argumentos.index("--plantas") + 1] = str(tmp_path / "no_existe.csv")
+
+    codigo = main(argumentos)
+
+    assert codigo == 1 and "no_existe.csv" in capsys.readouterr().err
+
+
+def test_rf19_falta_una_opcion_obligatoria_da_codigo_2(capsys):
+    codigo = main(["analizar", "--huella", "abc"])  # sin --plantas
+
+    assert codigo == 2 and "--plantas" in capsys.readouterr().err
+
+
+def test_rf19_una_excepcion_inesperada_da_codigo_3_con_un_mensaje_corto_y_sin_traza(tmp_path, capsys, monkeypatch):
+    def falla(*args, **kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr("kiwitracking.cli.ejecutar_analisis", falla)
+
+    codigo = main(_argumentos_de_analizar(tmp_path))
+
+    err = capsys.readouterr().err
+    assert codigo == 3
+    assert "Error inesperado: RuntimeError: boom" in err and "fallo del programa" in err
+    assert "Traceback" not in err
+
+
+def test_rf19_con_depurar_un_error_inesperado_muestra_ademas_la_traza_completa(tmp_path, capsys, monkeypatch):
+    def falla(*args, **kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr("kiwitracking.cli.ejecutar_analisis", falla)
+
+    codigo = main(_argumentos_de_analizar(tmp_path, "--depurar"))
+
+    err = capsys.readouterr().err
+    assert codigo == 3 and "Error inesperado: RuntimeError: boom" in err and "Traceback" in err
+
+
+def test_rf19_un_error_de_entrada_no_muestra_traza_ni_con_depurar(tmp_path, capsys):
+    codigo = main(_argumentos_de_analizar(tmp_path, "--depurar", huella_indicada="000000000000"))
+
+    assert codigo == 1 and "Traceback" not in capsys.readouterr().err
+
+
+def test_rf21_las_rutas_con_espacios_y_con_tildes_funcionan(tmp_path, capsys):
+    carpeta = tmp_path / "mi carpeta con espacios y ñandú"
+    carpeta.mkdir()
+    plantas = carpeta / "plantas del lote ñ.csv"
+    plantas.write_bytes((GOLDEN / "datos_plantas_completos.csv").read_bytes())
+    lote = pd.read_csv(plantas, encoding="utf-8")
+
+    codigo = main(["analizar", "--plantas", str(plantas), "--huella", huella(lote), "--salida", str(carpeta / "resultados óptimos"), "--estado-frio", "Adecuado"])
+
+    assert codigo == 0
+    assert (carpeta / "resultados óptimos" / "plantas.csv").is_file()
+
+
+def test_rf19_en_un_proceso_aparte_un_error_de_entrada_da_codigo_1_sin_traza(tmp_path):
+    entorno = {**os.environ, "PYTHONIOENCODING": "utf-8"}
+
+    proceso = subprocess.run(
+        [sys.executable, "-m", "kiwitracking", "analizar", "--plantas", str(tmp_path / "no_existe.csv"), "--huella", "abc"],
+        capture_output=True, text=True, encoding="utf-8", cwd=RAIZ, env=entorno,
+    )
+
+    assert proceso.returncode == 1
+    assert proceso.stderr.startswith("Error: ") and "no_existe.csv" in proceso.stderr and "Traceback" not in proceso.stderr
+
+
+def test_rf22_con_la_consola_forzada_a_ascii_la_pantalla_no_falla_al_mostrar_tildes(tmp_path):
+    lote = pd.read_csv(GOLDEN / "datos_plantas_completos.csv", encoding="utf-8")
+    entorno = {**os.environ, "PYTHONIOENCODING": "ascii"}  # una consola que no puede escribir "Ó"
+
+    proceso = subprocess.run(
+        [
+            sys.executable, "-m", "kiwitracking", "analizar", "--plantas", str(GOLDEN / "datos_plantas_completos.csv"),
+            "--huella", huella(lote), "--salida", str(tmp_path / "res"), "--estado-frio", "optimo",
+        ],
+        capture_output=True, cwd=RAIZ, env=entorno,
+    )
+
+    assert proceso.returncode == 0, proceso.stderr.decode("ascii", errors="replace")
+    assert b"Estado de fr" in proceso.stdout  # se imprimió, con lo que no cabe en ASCII reemplazado
+    assert (tmp_path / "res" / "plantas.csv").is_file()
+    assert "Óptimo" in (tmp_path / "res" / "resumen.json").read_text(encoding="utf-8")  # el archivo sí lleva la tilde
+
+
+def test_rf17_analizar_dos_veces_sobre_la_misma_carpeta_da_codigo_1_y_con_sobrescribir_funciona(tmp_path, capsys):
+    argumentos = _argumentos_de_analizar(tmp_path, "--estado-frio", "Adecuado")
+    assert main(argumentos) == 0
+    capsys.readouterr()
+
+    sin = main(argumentos)
+    err = capsys.readouterr().err
+    con = main([*argumentos, "--sobrescribir"])
+
+    assert sin == 1 and "--sobrescribir" in err
+    assert con == 0
+
+
+def test_rf17_sin_salida_los_resultados_van_a_la_carpeta_resultados_del_directorio_actual(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    argumentos = _argumentos_de_analizar(tmp_path, "--estado-frio", "Adecuado")
+    del argumentos[argumentos.index("--salida"): argumentos.index("--salida") + 2]
+
+    codigo = main(argumentos)
+
+    assert codigo == 0 and (tmp_path / "resultados" / "plantas.csv").is_file()

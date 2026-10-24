@@ -6,11 +6,14 @@ en el mismo proceso; `__main__.py` y el punto de entrada de `pyproject.toml` lo 
 
 import argparse
 import sys
+import traceback
 import unicodedata
 
+from kiwitracking.clima import formatear_porcentaje
 from kiwitracking.clima_parametros import ParametrosClima
-from kiwitracking.flujo import SolicitudAnalisis, ejecutar_mapa
+from kiwitracking.flujo import ResultadoFlujo, SolicitudAnalisis, ejecutar_analisis, ejecutar_mapa
 from kiwitracking.resultado import ErrorDeEntrada
+from kiwitracking.salida import escribir_resultados
 from kiwitracking.validacion import ESTADOS_FRIO, validar_parametros
 
 PROGRAMA = "kiwitracking"
@@ -153,8 +156,21 @@ def interpretar_analizar(argumentos: argparse.Namespace) -> SolicitudAnalisis:
     return SolicitudAnalisis(huella, argumentos.clima, estado, argumentos.campana, parametros_analisis, parametros_clima)
 
 
+def _salida_sin_fallos_de_codificacion() -> None:
+    """Que mostrar una tilde en una consola que no la admite no haga fallar el programa (RF-22)."""
+    for flujo in (sys.stdout, sys.stderr):
+        try:
+            flujo.reconfigure(errors="replace")
+        except (AttributeError, ValueError):  # un flujo que no se puede reconfigurar se deja como está
+            pass
+
+
 def main(argv: list[str] | None = None) -> int:
-    """Corre la línea de comandos y devuelve el código de salida (RF-19)."""
+    """Corre la línea de comandos y devuelve el código de salida (RF-19).
+
+    0: se completó. 1: error de entrada. 2: uso incorrecto. 3: error inesperado (un fallo del programa).
+    """
+    _salida_sin_fallos_de_codificacion()
     parser = construir_parser()
     try:
         argumentos = parser.parse_args(argv)
@@ -164,9 +180,17 @@ def main(argv: list[str] | None = None) -> int:
     if argumentos.comando is None:
         parser.print_help(sys.stderr)
         return 2
-    if argumentos.comando == "mapa":
-        return _comando_mapa(argumentos)
-    raise NotImplementedError(f"El comando {argumentos.comando} todavía no está implementado.")
+    try:
+        return _comando_mapa(argumentos) if argumentos.comando == "mapa" else _comando_analizar(argumentos)
+    except ErrorDeEntrada as error:
+        print(f"Error: {error}", file=sys.stderr)
+        return 1
+    except Exception as error:  # un fallo del programa y no de los datos: no se oculta
+        print(f"Error inesperado: {type(error).__name__}: {error}", file=sys.stderr)
+        print("Parece un fallo del programa, no de tus datos. Usá --depurar para ver el detalle.", file=sys.stderr)
+        if argumentos.depurar:
+            traceback.print_exc()
+        return 3
 
 
 def _comando_mapa(argumentos) -> int:
@@ -185,6 +209,42 @@ def _comando_mapa(argumentos) -> int:
     print("Revisá el mapa y, si la malla está donde corresponde, copiá la huella en: kiwitracking analizar --huella <huella>")
     for advertencia in resultado.advertencias:
         print(f"Advertencia {advertencia.codigo}: {advertencia.mensaje}")
+    return 0
+
+
+def _numero(valor: float, decimales: int) -> str:
+    return f"{valor:.{decimales}f}".replace(".", ",")
+
+
+def _linea_de_estado_de_frio(flujo: ResultadoFlujo) -> str:
+    estado = flujo.estado_frio
+    if estado.origen == "clima":
+        detalle = (
+            f"clima, período {estado.periodo}, {_numero(estado.horas, 1)} h, cobertura {formatear_porcentaje(estado.cobertura)}"
+        )
+        return f"Estado de frío: {estado.estado} ({detalle})"
+    if estado.origen == "manual":
+        return f"Estado de frío: {estado.estado} (indicado a mano)"
+    return "Estado de frío: ninguno (no se aplicó el ajuste por frío)"
+
+
+def _comando_analizar(argumentos) -> int:
+    solicitud = interpretar_analizar(argumentos)
+    flujo = ejecutar_analisis(argumentos.plantas, argumentos.malla, argumentos.crs_plantas, solicitud)
+    destino = argumentos.salida or "resultados"
+    escribir_resultados(destino, flujo, sobrescribir=argumentos.sobrescribir)
+
+    resumen = flujo.resultado.resumen
+    print(f"Plantas analizadas: {len(flujo.resultado.tabla)}")
+    factor = "sin calcular" if resumen.fc is None else _numero(resumen.fc, 4)
+    print(f"Factor de corrección: {factor} (corrección aplicada: {'sí' if resumen.correccion_aplicada else 'no'})")
+    print("Recomendaciones:")
+    for recomendacion, cantidad in flujo.resultado.tabla["recomendacion"].value_counts().sort_index().items():
+        print(f"  {recomendacion}: {cantidad}")
+    print(_linea_de_estado_de_frio(flujo))
+    for advertencia in flujo.advertencias:
+        print(f"Advertencia {advertencia.codigo}: {advertencia.mensaje}")
+    print(f"Resultados guardados en {destino}")
     return 0
 
 
