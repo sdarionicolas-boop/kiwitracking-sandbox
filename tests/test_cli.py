@@ -534,3 +534,24 @@ def test_rf17_sin_salida_los_resultados_van_a_la_carpeta_resultados_del_director
     codigo = main(argumentos)
 
     assert codigo == 0 and (tmp_path / "resultados" / "plantas.csv").is_file()
+
+
+@pytest.mark.parametrize(
+    "extra, aparece",
+    [
+        (["--huella", ""], "--huella"),  # huella ausente
+        (["--estado-frio", "Adecuado", "--clima", "clima.csv"], "excluyentes"),
+        (["--campana", "2024"], "--campana"),  # opción de clima sin --clima
+        (["--estado-frio", "regular"], "Deficiente, Adecuado, Óptimo"),
+        (["--correccion", "inventado"], "auto, forzar, desactivar"),
+        (["--prueba-t", "z"], "welch, student"),
+        (["--clima", "clima.csv", "--ventana-frio", "verano"], "invierno"),
+        (["--clima", "clima.csv", "--max-hueco-dias", "muchos"], "--max-hueco-dias"),
+    ],
+)
+def test_criterio6_cada_error_de_argumentos_da_codigo_1_con_un_mensaje_claro_y_sin_traza(extra, aparece, capsys):
+    codigo = main(["analizar", "--plantas", "plantas.csv", "--huella", "c4e55ae105c6", *extra])
+
+    err = capsys.readouterr().err
+    assert codigo == 1 and err.startswith("Error: ") and aparece in err
+    assert "Traceback" not in err

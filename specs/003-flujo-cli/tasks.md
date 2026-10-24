@@ -64,7 +64,7 @@ Lee: `spec.md` (RF-1 a RF-27), `clarificacion.md` y `plan.md`.
 
 ## Cierre
 
-- [ ] **T3.11. Validación final.**
+- [x] **T3.11. Validación final.**
   - Cubre: criterio 8 de la spec (cada RF con test).
   - Hecho cuando: existe `validacion.md` con la matriz de los 27 RF contra sus tests y el estado de cada criterio; la suite completa pasa con `-W error` **sin tests saltados**; se hicieron mutaciones (código de salida de un error inesperado, orden de columnas de `plantas.csv`, `allow_nan`, normalización de tildes de `--estado-frio`, conversión a `EPSG:4326` del mapa, conversión de la advertencia de huella en error) y cada una hace fallar al menos un test; el trabajo queda commiteado.
 
