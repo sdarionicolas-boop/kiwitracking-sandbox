@@ -58,7 +58,7 @@ Lee: `spec.md` (RF-1 a RF-27), `clarificacion.md` y `plan.md`.
 
 ## Datos reales
 
-- [ ] **T3.10. Flujo completo con el lote real (criterios 2 a 5 y 7).** `test_flujo_golden.py`.
+- [x] **T3.10. Flujo completo con el lote real (criterios 2 a 5 y 7).** `test_flujo_golden.py`.
   - Cubre: RF-6, RF-8, RF-10, RF-15, RF-23, RF-25, RF-27; criterios 2 a 5 y 7.
   - Hecho cuando: `mapa` sobre `datos_plantas_completos.csv` y `malla_zona.geojson` informa 53 plantas bajo malla y 106 fuera, con una huella igual a la de `huella()`; `analizar` con esa huella, `--clima clima_diario.csv` y `--campana 2024` da 16 "Mantener" y 19 "Intervenir" y `resumen.json` registra "Óptimo", período 2024 y origen `clima`; sin `--campana` el estado es "Adecuado" de 2025 y `advertencias.json` trae `CAMPANA_NO_INDICADA`; con `--no-escalar-std` y `--estado-frio Deficiente`, `plantas.csv` tiene el mismo `KVPI_corregido`, `ambiente` y `recomendacion` que `datos_plantas_completos.csv` (0 "Mantener", 19 "Intervenir"); una huella incorrecta con `--correccion forzar` da código 1 y no escribe nada; con el lote y la malla convertidos a `EPSG:22185` y declarados con `--crs-plantas`, `mapa` da las mismas 53 plantas bajo malla y la misma huella, y los puntos dibujados difieren en menos de 1e-6 grados.
 
