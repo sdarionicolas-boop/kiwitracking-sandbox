@@ -27,7 +27,7 @@ La verificación contra lo publicado necesita la serie real. La persona responsa
 
 **Muestreo** (CSV): una fila por planta. Columnas obligatorias: `id`, `X` e `Y`. Las demás (`row_index`, `col_index`…) se conservan.
 
-**Comando:** `kiwitracking kvpi --serie serie.csv --plantas muestreo.csv`, con:
+**Comando:** `kiwitracking kvpi --serie serie.csv --muestreo muestreo.csv`, con (la opción se llama `--muestreo` y no `--plantas` porque en `mapa` y `analizar` `--plantas` es el CSV que ya trae `KVPI_mean` y `KVPI_std`, es decir, justamente la salida de este comando):
 - `--salida`: archivo de resultados (por defecto, `plantas_kvpi.csv`).
 - `--min-campanas`: mínimo de campañas para calcular el desvío (por defecto, 2; entero de 2 en adelante).
 - `--campanas`: las etiquetas de campaña esperadas, separadas por comas (opcional; ver RF-22).
@@ -64,7 +64,7 @@ La verificación contra lo publicado necesita la serie real. La persona responsa
 **Comando `kvpi`**
 - **RF-15.** El comando DEBE leer la serie y el muestreo con la lectura de la spec 001 (UTF-8, tolera el BOM de Excel). SI un archivo no existe, ENTONCES DEBE terminar con un error que nombre el archivo.
 - **RF-16.** El comando DEBE escribir el resultado en el archivo indicado, en UTF-8 sin BOM, con `\n` como salto de línea, números completos sin redondear y celdas vacías para los valores vacíos. SI el archivo ya existe y no se indicó `--sobrescribir`, ENTONCES DEBE terminar con un error sin tocarlo. SI falla la escritura, ENTONCES NO DEBE dejar un archivo a medio escribir.
-- **RF-17.** El comando DEBE mostrar en pantalla la cantidad de plantas del resultado, las campañas encontradas con su cobertura (RF-20), cuántas plantas tienen cada cantidad de campañas, las advertencias y dónde quedó el archivo.
+- **RF-17.** El comando DEBE mostrar en pantalla la cantidad de plantas del resultado, las campañas encontradas con su cobertura (RF-20), cuántas plantas tienen cada cantidad de campañas, las advertencias y dónde quedó el archivo, con una línea que diga que ese archivo es el que se pasa como `--plantas` a `mapa` y `analizar`.
 - **RF-18.** El comando DEBE terminar con código 0 cuando se completa, 1 con un error de entrada, 2 con un uso incorrecto y 3 con un error inesperado, con el mismo formato de mensajes que `mapa` y `analizar` (RF-19 de la spec 003).
 - **RF-19.** El comando NO DEBE modificar los archivos de entrada, y ante un error NO DEBE dejar archivos de salida.
 
@@ -119,6 +119,7 @@ La verificación contra lo publicado necesita la serie real. La persona responsa
 - **[NECESITA ACLARACIÓN]** EVI no está acotado a [−1, 1] como dice la metodología, y hay que verificar que la máscara de nubes `QA60` siga completada en las imágenes posteriores a 2022. Ambos puntos pertenecen al paso de Earth Engine.
 
 ## Historial de cambios
+- **Clarificación (29/10/2026).** Se resolvió C2: en `kvpi` el archivo del muestreo se indica con `--muestreo`; `--plantas` queda solo para el CSV con `KVPI_mean` y `KVPI_std` de `mapa` y `analizar`, y la pantalla de `kvpi` lo recuerda (RF-17).
 - **Clarificación (29/10/2026).** Se resolvió C1: la referencia es el notebook 03, y la regla de repetidos de RF-4 se mantiene, declarada como deliberadamente más estricta que los dos notebooks.
 - **Serie real (24/10/2026).** La persona responsable exportó la serie de Earth Engine. Se comprobó que `KVPI_mean` y `KVPI_std` publicados se reproducen con promedio y desvío muestral (diferencias de ~1e-16), así que los criterios 3 y 4 dejan de estar pendientes y la tolerancia queda en 1e-12.
 - **Clarificación (24/10/2026).** Se resolvió el hallazgo grave C3: la cobertura por campaña se calcula y se muestra siempre, una campaña con menos de la mitad de las plantas con dato avisa, y una lista opcional de campañas esperadas permite detectar una que falta (RF-11, RF-17, RF-20 a RF-22).
