@@ -6,7 +6,7 @@ Lee: `spec.md` (RF-1 a RF-11), `clarificacion.md` y `plan.md`.
 
 ## Parámetro y entrada
 
-- [ ] **T5.0. Parámetro `origenes_estimados`.** `clima_parametros.py`.
+- [x] **T5.0. Parámetro `origenes_estimados`.** `clima_parametros.py`.
   - Cubre: RF-9.
   - Hecho cuando: `ParametrosClima().origenes_estimados` es `("interpolado",)`; una lista se convierte en tupla; una lista vacía, un valor que no es lista ni tupla, un elemento que no es texto y un texto vacío o de solo espacios dan `ErrorDeEntrada` con los valores permitidos; los demás parámetros y sus valores por defecto no cambian.
 

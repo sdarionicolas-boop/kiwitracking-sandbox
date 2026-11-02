@@ -32,6 +32,7 @@ class ParametrosClima:
     rango_fisico: tuple = (-60, 60)
     campana: int | None = None
     formato_fecha: str | None = None
+    origenes_estimados: tuple = ("interpolado",)
 
     def __post_init__(self):
         if self.ventana_frio not in VENTANAS_FRIO:
@@ -62,6 +63,20 @@ class ParametrosClima:
             raise ErrorDeEntrada(
                 f"formato_fecha={self.formato_fecha!r} no es válido: debe ser un texto como '%d/%m/%Y', o None."
             )
+        self._validar_origenes_estimados()
+
+    def _validar_origenes_estimados(self):
+        origenes = self.origenes_estimados
+        if (
+            not isinstance(origenes, (tuple, list))
+            or not origenes
+            or not all(isinstance(origen, str) and origen.strip() for origen in origenes)
+        ):
+            raise ErrorDeEntrada(
+                f"origenes_estimados={origenes!r} no es válido: debe ser una lista de textos no vacíos "
+                "(por ejemplo, ('interpolado',))."
+            )
+        object.__setattr__(self, "origenes_estimados", tuple(origenes))
 
     def _validar_rango_fisico(self):
         rango = self.rango_fisico
