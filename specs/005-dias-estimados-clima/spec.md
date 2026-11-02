@@ -36,7 +36,7 @@ Amplía el RF-8 de la spec 002 (las columnas extra se ignoraban: `origen` deja d
 - **RF-1.** SI el clima trae la columna `origen`, ENTONCES el sistema DEBE calcular, para cada ventana de frío, `dias_estimados` (los días disponibles de la ventana, con las dos temperaturas, cuyo `origen` está en `origenes_estimados`) y `proporcion_estimada` (`dias_estimados` sobre los días disponibles de la ventana; vacía si no hay días disponibles). El recuento DEBE guardarse en un campo nuevo `estimados` de `ResultadoClima`, con una fila por ventana (`periodo`, `dias_estimados`, `proporcion_estimada`), sin modificar la tabla `frio` ni `COLUMNAS_FRIO`.
 - **RF-2.** SI el clima NO trae la columna `origen`, ENTONCES `estimados` DEBE quedar sin filas, `dias_estimados` y `proporcion_estimada` del estado elegido DEBEN quedar vacíos (no se sabe) y NO DEBE salir ningún aviso de días estimados. Todo lo demás funciona como antes.
 - **RF-3.** Un día sin temperaturas (que no aporta al cálculo) NO DEBE contarse como estimado aunque tenga la etiqueta.
-- **RF-4.** SI una fecha aparece repetida con etiquetas de `origen` distintas, ENTONCES el día DEBE contarse como estimado si alguna de sus filas lo es (criterio conservador).
+- **RF-4.** SI una fecha aparece repetida, ENTONCES el día DEBE contarse con la etiqueta de `origen` de su primera aparición, como el resto de las columnas (regla de la spec 002: se conserva la primera fila). Las etiquetas de las copias descartadas no se miran.
 - **RF-5.** El recuento DEBE ser independiente del orden de las filas y de las columnas extra.
 
 **Aviso**
@@ -82,10 +82,10 @@ Amplía el RF-8 de la spec 002 (las columnas extra se ignoraban: `origen` deja d
 ## Dudas abiertas
 - **[NECESITA ACLARACIÓN]** Sin la columna `origen` no hay aviso: el programa no puede saber si hay días estimados. Un clima sin columna y con `--origenes-estimados` indicado se acepta sin avisar que no hay con qué comparar.
 - **[NECESITA ACLARACIÓN]** La proporción se calcula sobre los días **disponibles** de la ventana, no sobre los esperados. Con una ventana incompleta (cobertura menor que 1) las dos cifras difieren.
-- **[NECESITA ACLARACIÓN]** Con fechas repetidas y etiquetas distintas gana "estimado" (criterio conservador); hay que ver si conviene avisar también el conflicto.
 - **[NECESITA ACLARACIÓN]** El GDD por temporada también usa días interpolados y no se avisa; hoy no alimenta ninguna recomendación.
 - **[NECESITA ACLARACIÓN]** Condiciones de uso de los datos de INTA (ver `AGENTS.md`): siguen sin verificarse antes de abrir el repositorio.
 
 ## Historial de cambios
+- **Clarificación (02/11/2026).** Se resolvió C1: con fechas repetidas se usa el `origen` de la primera aparición, la regla de la spec 002; se quitó el criterio conservador (RF-4).
 - **Clarificación (02/11/2026).** Se resolvió C2: el recuento por ventana va en un campo nuevo `ResultadoClima.estimados`, sin tocar la tabla `frio` ni `COLUMNAS_FRIO` (RF-1, RF-2 y requisitos no funcionales).
 - **Borrador (02/11/2026).** Alcance acordado en la entrevista: solo avisar (sin excluir los días), la columna `origen` con el valor `interpolado` como criterio, configurable, y aviso siempre que haya al menos un día estimado en el período que decide el estado de frío.
