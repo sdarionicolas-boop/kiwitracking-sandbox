@@ -113,12 +113,13 @@ La verificación contra lo publicado necesita la serie real. La persona responsa
 - **[NECESITA ACLARACIÓN]** El `id` se compara tal como se lee. Un archivo con `4.0` y otro con `4` no coinciden; falta decidir si se normalizan los números enteros escritos con decimal.
 - **[NECESITA ACLARACIÓN]** `KVPI_cv` con `KVPI_mean` negativo da un valor negativo, como el notebook. Alternativa: dejarlo vacío con cualquier media menor o igual que cero.
 - **[NECESITA ACLARACIÓN]** No se valida el rango de `KVPI`; un valor absurdo entra al promedio sin aviso. Alternativa: un parámetro de rango plausible.
-- **[NECESITA ACLARACIÓN]** Con `min_campanas` mayor que 2, las plantas que no llegan conservan `KVPI_mean` pero no `KVPI_std`; quizá debería quedar también vacío el promedio.
+- Con `min_campanas` mayor que 2, las plantas que no llegan conservan `KVPI_mean` pero no `KVPI_std` (decidido en C6): el mínimo controla solo la confiabilidad del desvío, y `n_campanas` y `SIN_DESVIO` dejan a la vista cuáles son. Esas plantas entran a `analizar` con su promedio y la recomendación "Observar".
 - **[NECESITA ACLARACIÓN]** En el notebook original, la imagen de cada campaña es la mediana de los KVPI de cada imagen, no el KVPI de las medianas de los índices; la metodología escrita es ambigua. No afecta esta agregación, pero conviene aclararlo en la documentación.
 - **[NECESITA ACLARACIÓN]** Las ventanas de campaña del notebook van de junio a junio con fin el 30/06 y la siguiente empieza el 01/06: junio queda en dos campañas seguidas. Tampoco afecta esta agregación.
 - **[NECESITA ACLARACIÓN]** EVI no está acotado a [−1, 1] como dice la metodología, y hay que verificar que la máscara de nubes `QA60` siga completada en las imágenes posteriores a 2022. Ambos puntos pertenecen al paso de Earth Engine.
 
 ## Historial de cambios
+- **Clarificación (01/11/2026).** Se resolvió C6: `--min-campanas` controla solo el desvío; el promedio se conserva para toda planta con al menos una campaña con dato (RF-7, RF-8).
 - **Clarificación (01/11/2026).** Se resolvió C5: la regla de qué cuenta como vacío queda escrita (celda en blanco y textos ausentes de `pandas`, sin aviso; otro texto no numérico es error) (RF-3).
 - **Clarificación (01/11/2026).** Se resolvió C4: al comparar repetidos, el vacío cuenta como un valor más (dos vacíos se unifican con aviso; vacío contra número es un conflicto y da error) (RF-4).
 - **Clarificación (29/10/2026).** Se resolvió C2: en `kvpi` el archivo del muestreo se indica con `--muestreo`; `--plantas` queda solo para el CSV con `KVPI_mean` y `KVPI_std` de `mapa` y `analizar`, y la pantalla de `kvpi` lo recuerda (RF-17).
