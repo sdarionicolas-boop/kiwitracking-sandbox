@@ -102,7 +102,7 @@ La verificación contra lo publicado necesita la serie real. La persona responsa
 ## Criterios de finalización
 1. Todos los tests `RF-n` pasan, con avisos tratados como errores.
 2. **Serie sintética:** con una serie armada a mano (varias plantas, campañas faltantes, una planta con una sola campaña), `KVPI_mean`, `KVPI_std` (n−1), `KVPI_cv` y `n_campanas` coinciden con los valores calculados a mano.
-3. **Serie real:** con la serie exportada de Earth Engine para el lote de referencia (`tests/golden/`), `KVPI_mean` y `KVPI_std` de las 159 plantas coinciden con los de `datos_plantas_completos.csv` con una diferencia menor que 1e-12, y la serie real no trae filas repetidas ni vacíos (un test lo comprueba, para que una exportación futura que los traiga se vea enseguida).
+3. **Serie real:** con la serie exportada de Earth Engine para el lote de referencia (`tests/golden/`), `KVPI_mean` y `KVPI_std` de las 159 plantas coinciden con los de `datos_plantas_completos.csv` con una diferencia menor que 1e-12, y la serie real no trae filas repetidas ni vacíos (un test lo comprueba, para que una exportación futura que los traiga se vea enseguida). Si una exportación futura supera esa tolerancia, el test falla y se investiga la causa (imágenes, campañas, plantas); la tolerancia NO se ajusta para que pase. Si la diferencia es legítima, se actualiza el valor de referencia con su procedencia mediante un cambio de spec.
 4. **Flujo completo:** `kvpi`, `mapa` y `analizar` sobre esa serie dan 16 "Mantener" y 19 "Intervenir" con el estado de frío de la campaña 2024.
 5. El comando `kvpi` da código 1 con un mensaje claro y sin traza ante cada error de entrada conocido, y no deja archivos a medio escribir.
 6. Cada requisito tiene al menos un test asociado (fase de Validación).
@@ -119,6 +119,7 @@ La verificación contra lo publicado necesita la serie real. La persona responsa
 - **[NECESITA ACLARACIÓN]** EVI no está acotado a [−1, 1] como dice la metodología, y hay que verificar que la máscara de nubes `QA60` siga completada en las imágenes posteriores a 2022. Ambos puntos pertenecen al paso de Earth Engine.
 
 ## Historial de cambios
+- **Clarificación (01/11/2026).** Se cerró C10: si una exportación futura supera la tolerancia de 1e-12, el test falla y se investiga; la tolerancia no se ajusta, y un cambio legítimo del valor de referencia se hace con un cambio de spec (criterio 3).
 - **Clarificación (01/11/2026).** Se resolvió C7: las plantas del muestreo sin serie quedan fuera, la advertencia `PLANTAS_SIN_SERIE` nombra hasta 10 `id` y explica que la huella depende de qué plantas quedan (RF-13).
 - **Clarificación (01/11/2026).** Se resolvió C6: `--min-campanas` controla solo el desvío; el promedio se conserva para toda planta con al menos una campaña con dato (RF-7, RF-8).
 - **Clarificación (01/11/2026).** Se resolvió C5: la regla de qué cuenta como vacío queda escrita (celda en blanco y textos ausentes de `pandas`, sin aviso; otro texto no numérico es error) (RF-3).
