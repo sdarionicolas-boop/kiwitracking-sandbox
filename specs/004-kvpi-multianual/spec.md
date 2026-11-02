@@ -58,7 +58,7 @@ La verificación contra lo publicado necesita la serie real. La persona responsa
 - **RF-12.** SI hay plantas cuyo desvío quedó vacío por tener menos de `min_campanas`, ENTONCES el sistema DEBE registrar una advertencia `SIN_DESVIO` con cuántas son.
 
 **Unión con el muestreo**
-- **RF-13.** El sistema DEBE devolver solo las plantas presentes en la serie y en el muestreo, en el orden del muestreo, con las columnas `id`, `KVPI_mean`, `KVPI_std`, `KVPI_cv`, `n_campanas` y después las demás columnas del muestreo en su orden. Una planta de la serie sin coordenadas DEBE quedar fuera con una advertencia `PLANTAS_SIN_COORDENADAS` con la cantidad; una planta del muestreo sin serie DEBE quedar fuera con una advertencia `PLANTAS_SIN_SERIE` con la cantidad. SI ninguna planta está en los dos, ENTONCES el sistema DEBE detenerse con un error.
+- **RF-13.** El sistema DEBE devolver solo las plantas presentes en la serie y en el muestreo, en el orden del muestreo, con las columnas `id`, `KVPI_mean`, `KVPI_std`, `KVPI_cv`, `n_campanas` y después las demás columnas del muestreo en su orden. Una planta de la serie sin coordenadas DEBE quedar fuera con una advertencia `PLANTAS_SIN_COORDENADAS` con la cantidad; una planta del muestreo sin serie DEBE quedar fuera con una advertencia `PLANTAS_SIN_SERIE` con la cantidad y los primeros 10 `id` (y cuántos más hay). Como la huella de `mapa` depende de qué plantas quedan en el resultado, si cambia entre dos corridas lo primero que hay que mirar es esta advertencia; el mensaje lo dice. SI ninguna planta está en los dos, ENTONCES el sistema DEBE detenerse con un error.
 - **RF-14.** SI faltan columnas obligatorias del muestreo (`id`, `X` o `Y`), ENTONCES el sistema DEBE detenerse con un error que las nombre. SI hay `id` repetidos en el muestreo con todos los valores iguales, ENTONCES DEBE conservar una sola y avisar; SI el mismo `id` aparece con valores distintos, ENTONCES DEBE detenerse con un error que nombre hasta 10 `id` y cuántos más hay.
 
 **Comando `kvpi`**
@@ -119,6 +119,7 @@ La verificación contra lo publicado necesita la serie real. La persona responsa
 - **[NECESITA ACLARACIÓN]** EVI no está acotado a [−1, 1] como dice la metodología, y hay que verificar que la máscara de nubes `QA60` siga completada en las imágenes posteriores a 2022. Ambos puntos pertenecen al paso de Earth Engine.
 
 ## Historial de cambios
+- **Clarificación (01/11/2026).** Se resolvió C7: las plantas del muestreo sin serie quedan fuera, la advertencia `PLANTAS_SIN_SERIE` nombra hasta 10 `id` y explica que la huella depende de qué plantas quedan (RF-13).
 - **Clarificación (01/11/2026).** Se resolvió C6: `--min-campanas` controla solo el desvío; el promedio se conserva para toda planta con al menos una campaña con dato (RF-7, RF-8).
 - **Clarificación (01/11/2026).** Se resolvió C5: la regla de qué cuenta como vacío queda escrita (celda en blanco y textos ausentes de `pandas`, sin aviso; otro texto no numérico es error) (RF-3).
 - **Clarificación (01/11/2026).** Se resolvió C4: al comparar repetidos, el vacío cuenta como un valor más (dos vacíos se unifican con aviso; vacío contra número es un conflicto y da error) (RF-4).
