@@ -51,7 +51,7 @@ Lee: `spec.md` (RF-1 a RF-22), `clarificacion.md` y `plan.md`.
 
 ## Datos reales
 
-- [ ] **T4.9. Flujo con la serie real (criterios 3 y 4).** `test_kvpi_golden.py`.
+- [x] **T4.9. Flujo con la serie real (criterios 3 y 4).** `test_kvpi_golden.py`.
   - Cubre: criterios 3 y 4.
   - Hecho cuando: `KVPI_mean` y `KVPI_std` de las 159 plantas coinciden con los de `datos_plantas_completos.csv` con una diferencia menor que 1e-12; `n_campanas` es 6 en todas; `kvpi` sobre la serie y el muestreo reales, seguido de `mapa` y `analizar` con la malla, la huella y el clima de la campaña 2024, da 16 "Mantener" y 19 "Intervenir".
 
