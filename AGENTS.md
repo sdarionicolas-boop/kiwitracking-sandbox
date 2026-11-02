@@ -48,6 +48,19 @@ versión vieja y descartada: no usar.
   describa. Las condiciones de uso de los datos de INTA no se verificaron: el repositorio es privado, y
   conviene confirmarlas antes de abrirlo.
 
+## Datos de referencia de la serie de KVPI (spec 004)
+`tests/golden/kvpi_serie.csv` es la serie de KVPI por planta y campaña exportada de Google Earth Engine el
+24/10/2026 para el lote de referencia: 954 filas, 159 plantas por 6 campañas (`2019_2020` a `2024_2025`), sin
+repetidos ni vacíos. Columnas: `system:index`, `KVPI`, `campaña`, `col`, `id`, `row` y `.geo`; el núcleo usa
+`id`, `campaña` y `KVPI`. Promedio y desvío muestral (n−1) por `id` reproducen `KVPI_mean` y `KVPI_std` de
+`datos_plantas_completos.csv` con diferencias máximas de 5,6e-17 y 9,7e-17.
+
+- **Procedencia a completar por la persona responsable:** proyecto de Earth Engine y versión de las imágenes
+  (Sentinel-2 SR Harmonized) usadas en la exportación. Sin eso, una diferencia con lo publicado no se puede
+  explicar.
+- El muestreo (`id`, `X`, `Y`) de las 159 plantas sale de `datos_plantas_completos.csv`: las coordenadas son
+  idénticas a las de `muestreo_sistematico.csv` del repo original (verificado en la clarificación).
+
 ## Verificación obligatoria
 Antes de dar una tarea por terminada: correr los tests y mostrar el resultado.
 Una tarea a la vez, tests primero.

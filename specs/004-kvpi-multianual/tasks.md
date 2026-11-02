@@ -6,9 +6,9 @@ Lee: `spec.md` (RF-1 a RF-22), `clarificacion.md` y `plan.md`.
 
 ## Datos
 
-- [ ] **T4.0. Serie real como dato de referencia.** `tests/golden/`.
+- [x] **T4.0. Serie real como dato de referencia.** `tests/golden/`.
   - Cubre: C12; prepara los criterios 3 y 4.
-  - **Pide permiso antes de empezar:** mover `KVPI_serie_2019_2025 (1).csv` del directorio raíz del sandbox a `tests/golden/kvpi_serie.csv` y escribir una nota de procedencia (fecha de exportación 24/10/2026, 954 filas, 159 plantas por 6 campañas, proyecto y versión de imágenes que indique la persona responsable). Copiar también `muestreo_sistematico.csv` (159 plantas) como `tests/golden/muestreo.csv`.
+  - **Pide permiso antes de empezar:** mover `KVPI_serie_2019_2025 (1).csv` del directorio raíz del sandbox a `tests/golden/kvpi_serie.csv` y escribir una nota de procedencia (fecha de exportación 24/10/2026, 954 filas, 159 plantas por 6 campañas, proyecto y versión de imágenes que indique la persona responsable). El muestreo de las 159 plantas no se copia: `datos_plantas_completos.csv` ya trae `id`, `X` e `Y` idénticos a los de `muestreo_sistematico.csv` (el archivo original no está en el entorno).
   - Hecho cuando: ambos archivos están en `tests/golden/` con su nota de procedencia en `AGENTS.md`, y un test lee la serie y comprueba 954 filas, 159 `id`, 6 campañas, sin repetidos ni vacíos.
 
 ## Núcleo
