@@ -154,3 +154,73 @@ def test_las_advertencias_de_la_validacion_se_devuelven():
     resultado = agregar_kvpi(serie)
     assert [a.codigo for a in resultado.advertencias] == ["KVPI_DUPLICADO"]
     assert _por_id(resultado).loc["A", "n_campanas"] == 2
+
+
+def _codigos(resultado):
+    return [a.codigo for a in resultado.advertencias]
+
+
+def _aviso(resultado, codigo):
+    return next(a for a in resultado.advertencias if a.codigo == codigo).mensaje
+
+
+def test_rf11_plantas_con_menos_campanas_que_las_encontradas_avisan_con_cantidad_y_rango():
+    resultado = agregar_kvpi(SERIE_A_MANO)
+    assert "PLANTAS_CON_MENOS_CAMPANAS" in _codigos(resultado)
+    mensaje = _aviso(resultado, "PLANTAS_CON_MENOS_CAMPANAS")
+    assert "4 plantas" in mensaje  # B, C, D y E
+    assert "3 de la serie" in mensaje
+    assert "entre 0 y 2" in mensaje
+
+
+def test_rf11_una_planta_usa_el_singular():
+    serie = _serie([("A", "c1", 0.2), ("A", "c2", 0.4), ("B", "c1", 0.5), ("B", "c2", NAN)])
+    mensaje = _aviso(agregar_kvpi(serie), "PLANTAS_CON_MENOS_CAMPANAS")
+    assert "1 planta " in mensaje
+    assert "entre 1 y 1" in mensaje
+
+
+def test_rf11_sin_plantas_incompletas_no_avisa():
+    serie = _serie([("A", "c1", 0.2), ("A", "c2", 0.4), ("B", "c1", 0.5), ("B", "c2", 0.1)])
+    assert agregar_kvpi(serie).advertencias == []
+
+
+def test_rf11_una_campana_con_todo_vacio_igual_cuenta_como_encontrada():
+    serie = _serie(
+        [("A", "c1", 0.2), ("A", "c2", 0.4), ("A", "c3", NAN), ("B", "c1", 0.5), ("B", "c2", 0.1), ("B", "c3", NAN)]
+    )
+    mensaje = _aviso(agregar_kvpi(serie), "PLANTAS_CON_MENOS_CAMPANAS")
+    assert "2 plantas" in mensaje
+    assert "3 de la serie" in mensaje
+
+
+def test_rf11_con_una_sola_campana_en_toda_la_serie_no_avisa_menos_campanas():
+    serie = _serie([("A", "c1", 0.2), ("B", "c1", 0.5)])
+    assert _codigos(agregar_kvpi(serie)) == ["SIN_DESVIO"]
+
+
+def test_rf12_plantas_con_desvio_vacio_por_min_campanas_avisan_con_la_cantidad():
+    mensaje = _aviso(agregar_kvpi(SERIE_A_MANO), "SIN_DESVIO")
+    assert "2 plantas" in mensaje  # B y C
+    assert "menos de 2 campañas" in mensaje
+
+
+def test_rf12_el_umbral_es_min_campanas():
+    mensaje = _aviso(agregar_kvpi(SERIE_A_MANO, min_campanas=3), "SIN_DESVIO")
+    assert "4 plantas" in mensaje  # B, C, D y E
+    assert "menos de 3 campañas" in mensaje
+
+
+def test_rf12_una_planta_usa_el_singular():
+    serie = _serie([("A", "c1", 0.2), ("A", "c2", 0.4), ("B", "c1", 0.5), ("B", "c2", NAN)])
+    assert "1 planta " in _aviso(agregar_kvpi(serie), "SIN_DESVIO")
+
+
+def test_rf12_sin_plantas_sin_desvio_no_avisa():
+    serie = _serie([("A", "c1", 0.2), ("A", "c2", 0.4)])
+    assert "SIN_DESVIO" not in _codigos(agregar_kvpi(serie))
+
+
+def test_las_advertencias_salen_en_orden_validacion_menos_campanas_sin_desvio():
+    serie = _serie([("A", "c1", 0.2), ("A", "c1", 0.2), ("A", "c2", 0.4), ("B", "c1", 0.5), ("B", "c2", NAN)])
+    assert _codigos(agregar_kvpi(serie)) == ["KVPI_DUPLICADO", "PLANTAS_CON_MENOS_CAMPANAS", "SIN_DESVIO"]

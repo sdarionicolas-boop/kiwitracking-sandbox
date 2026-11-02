@@ -115,6 +115,27 @@ def _validar_min_campanas(min_campanas) -> None:
         )
 
 
+def _avisos_por_planta(por_planta: pd.DataFrame, campanas_encontradas: int, min_campanas: int) -> list[Advertencia]:
+    """RF-11 y RF-12: plantas con menos campañas que las de la serie, y plantas sin desvío por `min_campanas`."""
+    avisos = []
+    n = por_planta["n_campanas"]
+    incompletas = n[n < campanas_encontradas]
+    if len(incompletas):
+        mensaje = (
+            f"{_plural(len(incompletas), 'planta', 'plantas')} con menos campañas con dato que las "
+            f"{campanas_encontradas} de la serie (n_campanas entre {incompletas.min()} y {incompletas.max()})."
+        )
+        avisos.append(Advertencia("PLANTAS_CON_MENOS_CAMPANAS", mensaje))
+    sin_desvio = int((n < min_campanas).sum())
+    if sin_desvio:
+        mensaje = (
+            f"{_plural(sin_desvio, 'planta', 'plantas')} sin desvío (KVPI_std y KVPI_cv vacíos) "
+            f"por tener menos de {min_campanas} campañas con dato."
+        )
+        avisos.append(Advertencia("SIN_DESVIO", mensaje))
+    return avisos
+
+
 def agregar_kvpi(serie: pd.DataFrame, min_campanas: int = 2) -> ResultadoKvpi:
     """Agrega la serie por planta (RF-7 a RF-10): campañas con dato, promedio, desvío muestral (n−1) y CV.
 
@@ -139,4 +160,5 @@ def agregar_kvpi(serie: pd.DataFrame, min_campanas: int = 2) -> ResultadoKvpi:
             "KVPI_cv": cv.to_numpy(),
         }
     )
+    avisos += _avisos_por_planta(por_planta, tabla["campana"].nunique(), min_campanas)
     return ResultadoKvpi(por_planta, avisos)

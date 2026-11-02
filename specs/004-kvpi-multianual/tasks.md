@@ -21,7 +21,7 @@ Lee: `spec.md` (RF-1 a RF-22), `clarificacion.md` y `plan.md`.
   - Cubre: RF-7, RF-8, RF-9, RF-10; criterio 2.
   - Hecho cuando: con una serie armada a mano (varias plantas, campañas faltantes, una con una sola campaña, una con todas vacías) `n_campanas`, `KVPI_mean`, `KVPI_std` (n−1) y `KVPI_cv` coinciden con los valores calculados a mano; con menos de `min_campanas` el desvío y el CV quedan vacíos y el promedio se conserva; media 0 o vacía deja el CV vacío; `min_campanas` menor que 2 o no entero → error con los valores permitidos; la tabla sale ordenada por `id`.
 
-- [ ] **T4.3. Advertencias de planta.** `kvpi.agregar_kvpi`.
+- [x] **T4.3. Advertencias de planta.** `kvpi.agregar_kvpi`.
   - Cubre: RF-11, RF-12.
   - Hecho cuando: plantas con menos campañas que las etiquetas encontradas dan `PLANTAS_CON_MENOS_CAMPANAS` con la cantidad y el rango de `n_campanas`; plantas con desvío vacío por `min_campanas` dan `SIN_DESVIO`; con una sola campaña en toda la serie sale `SIN_DESVIO` y no `PLANTAS_CON_MENOS_CAMPANAS`.
 
