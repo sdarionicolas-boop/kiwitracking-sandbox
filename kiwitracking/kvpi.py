@@ -1,6 +1,8 @@
 """Agregación multianual del KVPI por planta (spec 004). Sin archivos, sin rutas y sin impresión."""
 
 import re
+from dataclasses import dataclass, field
+from numbers import Integral
 
 import numpy as np
 import pandas as pd
@@ -8,7 +10,16 @@ import pandas as pd
 from kiwitracking.resultado import Advertencia, ErrorDeEntrada
 
 MAX_PARES_EN_EL_ERROR = 10
+MIN_CAMPANAS_PERMITIDO = 2
 _COMA_DECIMAL = re.compile(r"^\s*-?\d+,\d+\s*$")
+
+
+@dataclass
+class ResultadoKvpi:
+    """Lo que devuelve `agregar_kvpi`: una fila por planta y las advertencias en orden."""
+
+    tabla: pd.DataFrame
+    advertencias: list[Advertencia] = field(default_factory=list)
 
 
 def _plural(cantidad: int, singular: str, plural: str) -> str:
@@ -93,3 +104,39 @@ def validar_serie(serie: pd.DataFrame) -> tuple[pd.DataFrame, list[Advertencia]]
         mensaje = f"Se descartaron {descartadas} filas repetidas (mismo id, campaña y KVPI)."
         avisos.append(Advertencia("KVPI_DUPLICADO", mensaje))
     return sin_repetidos.reset_index(drop=True), avisos
+
+
+def _validar_min_campanas(min_campanas) -> None:
+    """RF-10: un entero de 2 en adelante (True y False son enteros, pero menores que 2)."""
+    if not isinstance(min_campanas, Integral) or min_campanas < MIN_CAMPANAS_PERMITIDO:
+        raise ErrorDeEntrada(
+            f"min_campanas={min_campanas!r} no es válido. Valores permitidos: un entero mayor o igual que "
+            f"{MIN_CAMPANAS_PERMITIDO}."
+        )
+
+
+def agregar_kvpi(serie: pd.DataFrame, min_campanas: int = 2) -> ResultadoKvpi:
+    """Agrega la serie por planta (RF-7 a RF-10): campañas con dato, promedio, desvío muestral (n−1) y CV.
+
+    El cálculo es el de `groupby("id")["KVPI"].agg(["mean", "std", "count"])` de `pandas`. Con menos de
+    `min_campanas` campañas con dato el desvío y el CV quedan vacíos; el promedio se conserva. Los `id` salen
+    como texto y la tabla ordenada por `id`. No modifica la serie.
+    """
+    _validar_min_campanas(min_campanas)
+    tabla, avisos = validar_serie(serie)
+
+    agregado = tabla.groupby("id")["KVPI"].agg(["count", "mean", "std"])
+    agregado.loc[agregado["count"] < min_campanas, "std"] = np.nan
+    promedio_util = agregado["mean"].notna() & (agregado["mean"] != 0)
+    cv = (agregado["std"] / agregado["mean"]).where(promedio_util)
+
+    por_planta = pd.DataFrame(
+        {
+            "id": agregado.index,
+            "n_campanas": agregado["count"].astype(int).to_numpy(),
+            "KVPI_mean": agregado["mean"].to_numpy(),
+            "KVPI_std": agregado["std"].to_numpy(),
+            "KVPI_cv": cv.to_numpy(),
+        }
+    )
+    return ResultadoKvpi(por_planta, avisos)

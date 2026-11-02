@@ -17,7 +17,7 @@ Lee: `spec.md` (RF-1 a RF-22), `clarificacion.md` y `plan.md`.
   - Cubre: RF-1, RF-2, RF-3, RF-4, RF-5, RF-6.
   - Hecho cuando: faltan columnas → error que las nombra; serie vacía → error; `campaña` y `campana` juntas → error; `id` o campaña vacíos → error con la cantidad; `KVPI` con texto no numérico → error con ejemplo (y la coma decimal como causa probable); infinitos → error con la cantidad; los textos ausentes de `pandas` y la celda en blanco son vacío sin error; repetidos iguales (incluidos dos vacíos) → una sola y `KVPI_DUPLICADO`; repetidos distintos (incluido número contra vacío) → error con hasta 10 pares y cuántos más; etiquetas con espacios son la misma campaña; el resultado no cambia al reordenar filas o columnas; la tabla de entrada no se modifica.
 
-- [ ] **T4.2. Cálculo por planta.** `kvpi.agregar_kvpi` (sin cobertura ni advertencias).
+- [x] **T4.2. Cálculo por planta.** `kvpi.agregar_kvpi` (sin cobertura ni advertencias).
   - Cubre: RF-7, RF-8, RF-9, RF-10; criterio 2.
   - Hecho cuando: con una serie armada a mano (varias plantas, campañas faltantes, una con una sola campaña, una con todas vacías) `n_campanas`, `KVPI_mean`, `KVPI_std` (n−1) y `KVPI_cv` coinciden con los valores calculados a mano; con menos de `min_campanas` el desvío y el CV quedan vacíos y el promedio se conserva; media 0 o vacía deja el CV vacío; `min_campanas` menor que 2 o no entero → error con los valores permitidos; la tabla sale ordenada por `id`.
 
