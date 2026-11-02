@@ -256,3 +256,95 @@ def agregar_kvpi(
     avisos += _avisos_por_planta(por_planta, len(etiquetas), min_campanas)
     cobertura, avisos_cobertura = _cobertura_por_campana(tabla, etiquetas, total_plantas, cobertura_minima_campana)
     return ResultadoKvpi(por_planta, avisos + avisos_cobertura, cobertura)
+
+
+COLUMNAS_RESULTADO = ("id", "KVPI_mean", "KVPI_std", "KVPI_cv", "n_campanas")
+MENSAJE_HUELLA = (
+    "La huella de `mapa` depende de qué plantas quedan en el resultado: si cambia entre dos corridas, "
+    "revisá primero esta advertencia."
+)
+
+
+def _nombrar_ids(ids: list[str]) -> str:
+    """Hasta 10 `id` separados por coma y cuántos más hay."""
+    resto = len(ids) - MAX_PARES_EN_EL_ERROR
+    mas = f" (y {resto} más)" if resto > 0 else ""
+    return f"{', '.join(ids[:MAX_PARES_EN_EL_ERROR])}{mas}"
+
+
+def _preparar_muestreo(muestreo: pd.DataFrame) -> tuple[pd.DataFrame, list[Advertencia]]:
+    """RF-14: valida el muestreo y deja `id` como texto, `X` e `Y` como números y un solo registro por `id`."""
+    faltantes = [columna for columna in ("id", "X", "Y") if columna not in muestreo.columns]
+    if faltantes:
+        raise ErrorDeEntrada(f"Faltan columnas obligatorias en el muestreo: {', '.join(faltantes)}.")
+    if muestreo.empty:
+        raise ErrorDeEntrada("El muestreo está vacío: no hay plantas con coordenadas.")
+
+    ids, ids_vacios = _como_texto(muestreo["id"])
+    sin_id = int(ids_vacios.sum())
+    if sin_id:
+        raise ErrorDeEntrada(f"{_plural(sin_id, 'fila', 'filas')} del muestreo sin id: toda planta necesita un id.")
+
+    tabla = muestreo.copy()
+    tabla["id"] = ids
+    for columna in ("X", "Y"):
+        numerica = pd.to_numeric(tabla[columna], errors="coerce")
+        no_numericos = tabla[columna][tabla[columna].notna() & numerica.isna()]
+        if len(no_numericos):
+            raise ErrorDeEntrada(
+                f"La columna {columna} del muestreo contiene texto que no es un número, "
+                f"por ejemplo {str(no_numericos.iloc[0])!r}."
+            )
+        tabla[columna] = numerica
+
+    unicas = tabla.drop_duplicates()
+    en_conflicto = unicas.loc[unicas["id"].duplicated(), "id"].drop_duplicates().tolist()
+    if en_conflicto:
+        raise ErrorDeEntrada(
+            f"Hay {len(en_conflicto)} id repetidos en el muestreo con valores distintos: "
+            f"{_nombrar_ids(en_conflicto)}. Una planta no puede tener dos conjuntos de datos: corregí el archivo."
+        )
+    avisos = []
+    descartadas = len(tabla) - len(unicas)
+    if descartadas:
+        mensaje = f"Se descartaron {_plural(descartadas, 'fila repetida', 'filas repetidas')} del muestreo."
+        avisos.append(Advertencia("MUESTREO_DUPLICADO", mensaje))
+    return unicas.reset_index(drop=True), avisos
+
+
+def unir_con_muestreo(por_planta: pd.DataFrame, muestreo: pd.DataFrame) -> tuple[pd.DataFrame, list[Advertencia]]:
+    """Une el resultado por planta con el muestreo (RF-13, RF-14).
+
+    Devuelve solo las plantas que están en los dos, en el orden del muestreo, con `id`, `KVPI_mean`, `KVPI_std`,
+    `KVPI_cv`, `n_campanas` y después las demás columnas del muestreo. Los `id` se comparan como texto. Una
+    columna del muestreo con el nombre de una de resultado se reemplaza por la calculada. No modifica las tablas.
+    """
+    tabla, avisos = _preparar_muestreo(muestreo)
+    con_coordenadas = tabla["X"].notna() & tabla["Y"].notna()
+    ids_de_la_serie = set(por_planta["id"])
+    ids_con_coordenadas = set(tabla.loc[con_coordenadas, "id"])
+
+    sin_coordenadas = [i for i in por_planta["id"] if i not in ids_con_coordenadas]
+    if sin_coordenadas:
+        mensaje = (
+            f"{_plural(len(sin_coordenadas), 'planta', 'plantas')} de la serie sin coordenadas en el muestreo "
+            f"quedan fuera: {_nombrar_ids(sin_coordenadas)}."
+        )
+        avisos.append(Advertencia("PLANTAS_SIN_COORDENADAS", mensaje))
+    sin_serie = [i for i in tabla["id"] if i not in ids_de_la_serie]
+    if sin_serie:
+        mensaje = (
+            f"{_plural(len(sin_serie), 'planta', 'plantas')} del muestreo sin serie quedan fuera: "
+            f"{_nombrar_ids(sin_serie)}. {MENSAJE_HUELLA}"
+        )
+        avisos.append(Advertencia("PLANTAS_SIN_SERIE", mensaje))
+
+    en_comun = tabla[con_coordenadas & tabla["id"].isin(ids_de_la_serie)]
+    if en_comun.empty:
+        raise ErrorDeEntrada(
+            "Ninguna planta de la serie está en el muestreo con coordenadas. "
+            "Revisá que los id sean los mismos en los dos archivos."
+        )
+    del_muestreo = [columna for columna in tabla.columns if columna != "id" and columna not in COLUMNAS_RESULTADO]
+    unidas = en_comun[["id", *del_muestreo]].merge(por_planta, on="id", how="left")
+    return unidas[[*COLUMNAS_RESULTADO, *del_muestreo]].reset_index(drop=True), avisos

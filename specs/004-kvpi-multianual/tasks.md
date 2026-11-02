@@ -31,7 +31,7 @@ Lee: `spec.md` (RF-1 a RF-22), `clarificacion.md` y `plan.md`.
 
 ## Unión con el muestreo
 
-- [ ] **T4.5. Muestreo y unión.** `kvpi.unir_con_muestreo`.
+- [x] **T4.5. Muestreo y unión.** `kvpi.unir_con_muestreo`.
   - Cubre: RF-13, RF-14.
   - Hecho cuando: faltan `id`, `X` o `Y` → error que las nombra; `id` repetidos del muestreo iguales → una sola con aviso, distintos → error con hasta 10 `id`; el resultado trae solo las plantas en ambos, en el orden del muestreo, con las columnas `id`, `KVPI_mean`, `KVPI_std`, `KVPI_cv`, `n_campanas` y después las del muestreo; `PLANTAS_SIN_COORDENADAS` con la cantidad y `PLANTAS_SIN_SERIE` con la cantidad, los primeros 10 `id` y la frase sobre la huella; ninguna en común → error.
 
