@@ -13,7 +13,7 @@ Lee: `spec.md` (RF-1 a RF-22), `clarificacion.md` y `plan.md`.
 
 ## Núcleo
 
-- [ ] **T4.1. Validación de la serie.** `kvpi.validar_serie`.
+- [x] **T4.1. Validación de la serie.** `kvpi.validar_serie`.
   - Cubre: RF-1, RF-2, RF-3, RF-4, RF-5, RF-6.
   - Hecho cuando: faltan columnas → error que las nombra; serie vacía → error; `campaña` y `campana` juntas → error; `id` o campaña vacíos → error con la cantidad; `KVPI` con texto no numérico → error con ejemplo (y la coma decimal como causa probable); infinitos → error con la cantidad; los textos ausentes de `pandas` y la celda en blanco son vacío sin error; repetidos iguales (incluidos dos vacíos) → una sola y `KVPI_DUPLICADO`; repetidos distintos (incluido número contra vacío) → error con hasta 10 pares y cuántos más; etiquetas con espacios son la misma campaña; el resultado no cambia al reordenar filas o columnas; la tabla de entrada no se modifica.
 
