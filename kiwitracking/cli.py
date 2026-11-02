@@ -11,9 +11,9 @@ import unicodedata
 
 from kiwitracking.clima import formatear_porcentaje
 from kiwitracking.clima_parametros import ParametrosClima
-from kiwitracking.flujo import ResultadoFlujo, SolicitudAnalisis, ejecutar_analisis, ejecutar_mapa
+from kiwitracking.flujo import ResultadoFlujo, SolicitudAnalisis, ejecutar_analisis, ejecutar_kvpi, ejecutar_mapa
 from kiwitracking.resultado import ErrorDeEntrada
-from kiwitracking.salida import escribir_resultados
+from kiwitracking.salida import escribir_plantas_kvpi, escribir_resultados
 from kiwitracking.validacion import ESTADOS_FRIO, validar_parametros
 
 PROGRAMA = "kiwitracking"
@@ -49,7 +49,7 @@ def construir_parser() -> argparse.ArgumentParser:
         add_help=False,
     )
     parser.add_argument("-h", "--help", action="help", help="Muestra esta ayuda y termina.")
-    subcomandos = parser.add_subparsers(dest="comando", metavar="{mapa,analizar}", parser_class=_Parser)
+    subcomandos = parser.add_subparsers(dest="comando", metavar="{mapa,analizar,kvpi}", parser_class=_Parser)
     comunes = _opciones_comunes()
 
     mapa = subcomandos.add_parser(
@@ -81,6 +81,21 @@ def construir_parser() -> argparse.ArgumentParser:
     analizar.add_argument("--cobertura-minima", type=float, help="Cobertura mínima de un período completo (con --clima).")
     analizar.add_argument("--max-hueco-dias", help="Hueco máximo en días, o ninguno (con --clima).")
     analizar.add_argument("--estado-frio", help="Estado de frío escrito a mano: Deficiente, Adecuado u Óptimo.")
+
+    kvpi = subcomandos.add_parser(
+        "kvpi", add_help=False, help="Agrega la serie de KVPI por planta y la une con el muestreo."
+    )
+    kvpi.add_argument("-h", "--help", action="help", help="Muestra esta ayuda y termina.")
+    kvpi.add_argument("--serie", required=True, help="CSV de la serie: una fila por planta y campaña (id, campaña, KVPI).")
+    kvpi.add_argument("--muestreo", required=True, help="CSV del muestreo con id, X e Y (una fila por planta).")
+    kvpi.add_argument("--salida", help="CSV de resultados (por defecto, plantas_kvpi.csv).")
+    kvpi.add_argument("--min-campanas", type=int, help="Campañas con dato mínimas para calcular el desvío (2 o más).")
+    kvpi.add_argument("--campanas", help="Etiquetas de campaña esperadas, separadas por comas.")
+    kvpi.add_argument(
+        "--cobertura-minima-campana", type=float, help="Proporción mínima de plantas con dato por campaña (entre 0 y 1)."
+    )
+    kvpi.add_argument("--sobrescribir", action="store_true", help="Permite reemplazar el archivo de salida.")
+    kvpi.add_argument("--depurar", action="store_true", help="Muestra la traza completa de un error inesperado.")
     return parser
 
 
@@ -181,7 +196,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.print_help(sys.stderr)
         return 2
     try:
-        return _comando_mapa(argumentos) if argumentos.comando == "mapa" else _comando_analizar(argumentos)
+        return {"mapa": _comando_mapa, "analizar": _comando_analizar, "kvpi": _comando_kvpi}[argumentos.comando](argumentos)
     except ErrorDeEntrada as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
@@ -245,6 +260,37 @@ def _comando_analizar(argumentos) -> int:
     for advertencia in flujo.advertencias:
         print(f"Advertencia {advertencia.codigo}: {advertencia.mensaje}")
     print(f"Resultados guardados en {destino}")
+    return 0
+
+
+def _cantidad(n: int, singular: str, plural: str) -> str:
+    return f"{n} {singular if n == 1 else plural}"
+
+
+def _comando_kvpi(argumentos) -> int:
+    """Solo se pasan al flujo los parámetros indicados: los valores por defecto son los de `ejecutar_kvpi`."""
+    indicados = {}
+    if argumentos.min_campanas is not None:
+        indicados["min_campanas"] = argumentos.min_campanas
+    if argumentos.campanas is not None:
+        indicados["campanas"] = [etiqueta.strip() for etiqueta in argumentos.campanas.split(",")]
+    if argumentos.cobertura_minima_campana is not None:
+        indicados["cobertura_minima_campana"] = argumentos.cobertura_minima_campana
+    resultado = ejecutar_kvpi(argumentos.serie, argumentos.muestreo, **indicados)
+    destino = argumentos.salida or "plantas_kvpi.csv"
+    escribir_plantas_kvpi(destino, resultado.tabla, sobrescribir=argumentos.sobrescribir)
+
+    print(f"Plantas en el resultado: {len(resultado.tabla)}")
+    print(f"Campañas encontradas (cobertura sobre las {_cantidad(resultado.n_plantas_muestreo, 'planta', 'plantas')} del muestreo):")
+    for c in resultado.cobertura:
+        print(f"  {c.campana}: {_cantidad(c.plantas_con_dato, 'planta', 'plantas')} con dato ({formatear_porcentaje(c.proporcion)})")
+    print("Plantas según las campañas con dato:")
+    for campanas, plantas in resultado.tabla["n_campanas"].value_counts().sort_index(ascending=False).items():
+        print(f"  {_cantidad(int(campanas), 'campaña', 'campañas')}: {_cantidad(int(plantas), 'planta', 'plantas')}")
+    for advertencia in resultado.advertencias:
+        print(f"Advertencia {advertencia.codigo}: {advertencia.mensaje}")
+    print(f"Resultado guardado en {destino}")
+    print("Ese archivo es la entrada --plantas de `kiwitracking mapa` y `kiwitracking analizar`.")
     return 0
 
 

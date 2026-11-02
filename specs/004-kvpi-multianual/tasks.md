@@ -45,7 +45,7 @@ Lee: `spec.md` (RF-1 a RF-22), `clarificacion.md` y `plan.md`.
   - Cubre: RF-16, RF-19.
   - Hecho cuando: el archivo sale en UTF-8 sin BOM, con `\n`, números completos y celdas vacías en blanco; si existe y no se indicó `--sobrescribir`, error sin tocarlo; con `--sobrescribir` lo reemplaza; si falla la escritura (simulada) no queda un archivo a medio escribir.
 
-- [ ] **T4.8. Subcomando y pantalla.** `cli.py`.
+- [x] **T4.8. Subcomando y pantalla.** `cli.py`.
   - Cubre: RF-17, RF-18.
   - Hecho cuando: `kiwitracking kvpi --serie … --muestreo …` acepta `--salida` (por defecto `plantas_kvpi.csv`), `--min-campanas`, `--campanas`, `--cobertura-minima-campana`, `--sobrescribir` y `--depurar`; la pantalla muestra las plantas del resultado, las campañas con su cobertura, cuántas plantas tienen cada cantidad de campañas, las advertencias, dónde quedó el archivo y la línea que dice que es la entrada `--plantas` de `mapa` y `analizar`; códigos 0, 1, 2 y 3 con el mismo formato de mensajes que los otros comandos; un test corre el programa en un proceso aparte y comprueba el código de salida real.
 
