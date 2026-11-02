@@ -28,13 +28,13 @@ Amplía el RF-8 de la spec 002 (las columnas extra se ignoraban: `origen` deja d
 
 **Línea de comandos:** `kiwitracking analizar --clima clima.csv [--origenes-estimados interpolado,estimado]`; la opción solo se usa con `--clima`, como las demás opciones de clima.
 
-**Núcleo:** `ParametrosClima(origenes_estimados=("interpolado",))`. `calcular_clima`, `estado_frio_de_campana` y `elegir_estado_de_frio` propagan el recuento.
+**Núcleo:** `ParametrosClima(origenes_estimados=("interpolado",))`. `calcular_clima` llena `ResultadoClima.estimados`; `estado_frio_de_campana` copia el recuento del período elegido a `EstadoCampana.dias_estimados` y `EstadoCampana.proporcion_estimada`; `elegir_estado_de_frio` los pasa a `EstadoDeFrio`.
 
 ## Requisitos funcionales
 
 **Recuento por período**
-- **RF-1.** SI el clima trae la columna `origen`, ENTONCES el sistema DEBE calcular, para cada ventana de frío, `dias_estimados` (los días disponibles de la ventana, con las dos temperaturas, cuyo `origen` está en `origenes_estimados`) y `proporcion_estimada` (`dias_estimados` sobre los días disponibles de la ventana; vacía si no hay días disponibles).
-- **RF-2.** SI el clima NO trae la columna `origen`, ENTONCES `dias_estimados` y `proporcion_estimada` DEBEN quedar vacíos (no se sabe) y NO DEBE salir ningún aviso de días estimados. Todo lo demás funciona como antes.
+- **RF-1.** SI el clima trae la columna `origen`, ENTONCES el sistema DEBE calcular, para cada ventana de frío, `dias_estimados` (los días disponibles de la ventana, con las dos temperaturas, cuyo `origen` está en `origenes_estimados`) y `proporcion_estimada` (`dias_estimados` sobre los días disponibles de la ventana; vacía si no hay días disponibles). El recuento DEBE guardarse en un campo nuevo `estimados` de `ResultadoClima`, con una fila por ventana (`periodo`, `dias_estimados`, `proporcion_estimada`), sin modificar la tabla `frio` ni `COLUMNAS_FRIO`.
+- **RF-2.** SI el clima NO trae la columna `origen`, ENTONCES `estimados` DEBE quedar sin filas, `dias_estimados` y `proporcion_estimada` del estado elegido DEBEN quedar vacíos (no se sabe) y NO DEBE salir ningún aviso de días estimados. Todo lo demás funciona como antes.
 - **RF-3.** Un día sin temperaturas (que no aporta al cálculo) NO DEBE contarse como estimado aunque tenga la etiqueta.
 - **RF-4.** SI una fecha aparece repetida con etiquetas de `origen` distintas, ENTONCES el día DEBE contarse como estimado si alguna de sus filas lo es (criterio conservador).
 - **RF-5.** El recuento DEBE ser independiente del orden de las filas y de las columnas extra.
@@ -54,7 +54,7 @@ Amplía el RF-8 de la spec 002 (las columnas extra se ignoraban: `origen` deja d
 ## Requisitos no funcionales
 - No se agregan dependencias (constitución #1).
 - El núcleo no lee ni escribe archivos (constitución #6, #9); el valor por defecto de `origenes_estimados` vive en `ParametrosClima` (constitución #7).
-- Un clima sin la columna `origen` produce exactamente los mismos resultados que antes de esta spec: los 1.230 tests actuales siguen pasando, salvo los que enumeran las columnas de `frio`, que se actualizan.
+- Un clima sin la columna `origen` produce exactamente los mismos resultados que antes de esta spec: la tabla `frio` y `COLUMNAS_FRIO` no cambian y los 1.230 tests actuales siguen pasando sin modificarse.
 
 ## Casos límite
 - Todos los días de la ventana son estimados: `dias_estimados` igual a los disponibles, proporción 100 %, aviso.
@@ -87,4 +87,5 @@ Amplía el RF-8 de la spec 002 (las columnas extra se ignoraban: `origen` deja d
 - **[NECESITA ACLARACIÓN]** Condiciones de uso de los datos de INTA (ver `AGENTS.md`): siguen sin verificarse antes de abrir el repositorio.
 
 ## Historial de cambios
+- **Clarificación (02/11/2026).** Se resolvió C2: el recuento por ventana va en un campo nuevo `ResultadoClima.estimados`, sin tocar la tabla `frio` ni `COLUMNAS_FRIO` (RF-1, RF-2 y requisitos no funcionales).
 - **Borrador (02/11/2026).** Alcance acordado en la entrevista: solo avisar (sin excluir los días), la columna `origen` con el valor `interpolado` como criterio, configurable, y aviso siempre que haya al menos un día estimado en el período que decide el estado de frío.
