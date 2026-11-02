@@ -10,7 +10,7 @@ Lee: `spec.md` (RF-1 a RF-11), `clarificacion.md` y `plan.md`.
   - Cubre: RF-9.
   - Hecho cuando: `ParametrosClima().origenes_estimados` es `("interpolado",)`; una lista se convierte en tupla; una lista vacía, un valor que no es lista ni tupla, un elemento que no es texto y un texto vacío o de solo espacios dan `ErrorDeEntrada` con los valores permitidos; los demás parámetros y sus valores por defecto no cambian.
 
-- [ ] **T5.1. Preparar el clima con `origen`.** `clima_entrada.preparar_clima_con_origen`.
+- [x] **T5.1. Preparar el clima con `origen`.** `clima_entrada.preparar_clima_con_origen`.
   - Cubre: RF-3 (parte de la preparación), RF-4, RF-5.
   - Hecho cuando: con la columna `origen`, la tabla preparada trae una columna booleana `estimado` (la etiqueta, sin espacios y sin distinguir mayúsculas, está en `origenes_estimados`, **y** el día está disponible); una celda vacía, una etiqueta numérica y una etiqueta fuera de la lista no son estimadas; con una fecha repetida se usa el `origen` de la primera aparición; sin la columna `origen` no hay columna `estimado`; el resultado no depende del orden de las filas ni de las columnas extra; `preparar_clima` devuelve exactamente lo de antes (los tests de la spec 002 pasan sin cambios).
 

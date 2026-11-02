@@ -170,7 +170,25 @@ def preparar_clima(
     Devuelve `date` (día), `Tmax`, `Tmin` (decimales) y `disponible` (verdadero si el día tiene las
     dos temperaturas), ordenada por fecha y con índice nuevo, más las advertencias de la entrada.
     Un día con una temperatura vacía queda en la tabla como faltante (RF-7); las columnas extra
-    se ignoran y no pasan al resultado (RF-8). No modifica la tabla de entrada.
+    se ignoran y no pasan al resultado (RF-8), tampoco `origen`. No modifica la tabla de entrada.
+    """
+    preparada, advertencias = preparar_clima_con_origen(tabla, parametros)
+    return preparada.drop(columns="estimado", errors="ignore"), advertencias
+
+
+def _etiqueta_normalizada(texto: pd.Series) -> pd.Series:
+    return texto.astype("string").str.strip().str.casefold()
+
+
+def preparar_clima_con_origen(
+    tabla: pd.DataFrame, parametros: ParametrosClima | None = None
+) -> tuple[pd.DataFrame, list[Advertencia]]:
+    """Lo mismo que `preparar_clima`, más la columna `estimado` si la tabla trae `origen` (spec 005, RF-1 a RF-5).
+
+    `estimado` es verdadero si la etiqueta de `origen` (sin espacios al inicio ni al final y sin distinguir
+    mayúsculas) está en `parametros.origenes_estimados` y el día tiene las dos temperaturas. Con una fecha
+    repetida vale el `origen` de su primera aparición, como el resto de las columnas. Sin la columna `origen`
+    no se agrega `estimado`.
     """
     parametros = parametros or ParametrosClima()
     validar_columnas_y_temperaturas(tabla)
@@ -182,9 +200,16 @@ def preparar_clima(
             "Tmin": pd.to_numeric(tabla["Tmin"]).astype(float),
         }
     )
+    con_origen = "origen" in tabla.columns
+    if con_origen:
+        base["origen"] = tabla["origen"]
     base, advertencias = descartar_fechas_duplicadas(base)
     validar_temperaturas_plausibles(base, parametros.rango_fisico)
 
     base = base.sort_values("date", kind="stable").reset_index(drop=True)
     base["disponible"] = base["Tmax"].notna() & base["Tmin"].notna()
+    if con_origen:
+        estimadas = {etiqueta.strip().casefold() for etiqueta in parametros.origenes_estimados}
+        coincide = _etiqueta_normalizada(base.pop("origen")).isin(estimadas)
+        base["estimado"] = coincide & base["disponible"]
     return base, advertencias
