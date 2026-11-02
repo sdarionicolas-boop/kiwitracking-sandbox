@@ -2,11 +2,12 @@
 
 import re
 from dataclasses import dataclass, field
-from numbers import Integral
+from numbers import Integral, Real
 
 import numpy as np
 import pandas as pd
 
+from kiwitracking.clima import formatear_porcentaje
 from kiwitracking.resultado import Advertencia, ErrorDeEntrada
 
 MAX_PARES_EN_EL_ERROR = 10
@@ -14,12 +15,22 @@ MIN_CAMPANAS_PERMITIDO = 2
 _COMA_DECIMAL = re.compile(r"^\s*-?\d+,\d+\s*$")
 
 
+@dataclass(frozen=True)
+class CoberturaCampana:
+    """RF-20: cuántas plantas tienen dato en una campaña y qué proporción son de las de referencia."""
+
+    campana: str
+    plantas_con_dato: int
+    proporcion: float
+
+
 @dataclass
 class ResultadoKvpi:
-    """Lo que devuelve `agregar_kvpi`: una fila por planta y las advertencias en orden."""
+    """Lo que devuelve `agregar_kvpi`: una fila por planta, las advertencias en orden y la cobertura por campaña."""
 
     tabla: pd.DataFrame
     advertencias: list[Advertencia] = field(default_factory=list)
+    cobertura: list[CoberturaCampana] = field(default_factory=list)
 
 
 def _plural(cantidad: int, singular: str, plural: str) -> str:
@@ -136,7 +147,83 @@ def _avisos_por_planta(por_planta: pd.DataFrame, campanas_encontradas: int, min_
     return avisos
 
 
-def agregar_kvpi(serie: pd.DataFrame, min_campanas: int = 2) -> ResultadoKvpi:
+def _validar_cobertura_minima(valor) -> None:
+    """RF-21: un número entre 0 y 1."""
+    es_numero = isinstance(valor, Real) and not isinstance(valor, bool)
+    if not es_numero or not 0 <= valor <= 1:
+        raise ErrorDeEntrada(
+            f"cobertura_minima_campana={valor!r} no es válido. Valores permitidos: un número entre 0 y 1."
+        )
+
+
+def _validar_total_plantas(total) -> None:
+    """RF-20: las plantas de referencia, si se indican, son un entero positivo."""
+    if total is None:
+        return
+    if isinstance(total, bool) or not isinstance(total, Integral) or total < 1:
+        raise ErrorDeEntrada(
+            f"total_plantas={total!r} no es válido. Valores permitidos: un entero mayor o igual que 1."
+        )
+
+
+def _etiquetas_esperadas(campanas) -> list[str]:
+    """RF-22: la lista de campañas esperadas, sin espacios al inicio ni al final, sin vacías ni repetidas."""
+    if isinstance(campanas, str) or not hasattr(campanas, "__iter__"):
+        raise ErrorDeEntrada("Las campañas esperadas deben ser una lista de etiquetas, no un solo texto.")
+    etiquetas = [str(etiqueta).strip() for etiqueta in campanas]
+    if not etiquetas:
+        raise ErrorDeEntrada("La lista de campañas esperadas está vacía.")
+    if "" in etiquetas:
+        raise ErrorDeEntrada("La lista de campañas esperadas tiene una etiqueta vacía.")
+    repetidas = sorted({etiqueta for etiqueta in etiquetas if etiquetas.count(etiqueta) > 1})
+    if repetidas:
+        raise ErrorDeEntrada(f"La lista de campañas esperadas repite etiquetas: {', '.join(repetidas)}.")
+    return etiquetas
+
+
+def _comparar_con_esperadas(encontradas: list[str], esperadas: list[str]) -> None:
+    """RF-22: la lista esperada y las etiquetas de la serie tienen que ser las mismas."""
+    faltan = [etiqueta for etiqueta in esperadas if etiqueta not in encontradas]
+    sobran = [etiqueta for etiqueta in encontradas if etiqueta not in esperadas]
+    if not (faltan or sobran):
+        return
+    partes = []
+    if faltan:
+        partes.append(f"no aparecen en la serie: {', '.join(faltan)}")
+    if sobran:
+        partes.append(f"no estaban entre las esperadas: {', '.join(sobran)}")
+    raise ErrorDeEntrada(f"Las campañas esperadas no coinciden con las de la serie ({'; '.join(partes)}).")
+
+
+def _cobertura_por_campana(
+    tabla: pd.DataFrame, etiquetas: list[str], total_plantas: int | None, minimo: float
+) -> tuple[list[CoberturaCampana], list[Advertencia]]:
+    """RF-20 y RF-21: plantas con dato por campaña, su proporción y un aviso por cada una por debajo del mínimo."""
+    total = total_plantas if total_plantas is not None else tabla["id"].nunique()
+    con_dato = tabla[tabla["KVPI"].notna()].groupby("campana")["id"].nunique()
+    cobertura = [
+        CoberturaCampana(etiqueta, int(con_dato.get(etiqueta, 0)), int(con_dato.get(etiqueta, 0)) / total)
+        for etiqueta in etiquetas
+    ]
+    avisos = [
+        Advertencia(
+            "CAMPANA_CON_POCOS_DATOS",
+            f"La campaña {c.campana} tiene dato en {c.plantas_con_dato} de {total} plantas "
+            f"({formatear_porcentaje(c.proporcion)}), por debajo del mínimo de {formatear_porcentaje(minimo)}.",
+        )
+        for c in cobertura
+        if c.proporcion < minimo
+    ]
+    return cobertura, avisos
+
+
+def agregar_kvpi(
+    serie: pd.DataFrame,
+    min_campanas: int = 2,
+    campanas: list[str] | None = None,
+    cobertura_minima_campana: float = 0.5,
+    total_plantas: int | None = None,
+) -> ResultadoKvpi:
     """Agrega la serie por planta (RF-7 a RF-10): campañas con dato, promedio, desvío muestral (n−1) y CV.
 
     El cálculo es el de `groupby("id")["KVPI"].agg(["mean", "std", "count"])` de `pandas`. Con menos de
@@ -144,7 +231,13 @@ def agregar_kvpi(serie: pd.DataFrame, min_campanas: int = 2) -> ResultadoKvpi:
     como texto y la tabla ordenada por `id`. No modifica la serie.
     """
     _validar_min_campanas(min_campanas)
+    _validar_cobertura_minima(cobertura_minima_campana)
+    _validar_total_plantas(total_plantas)
+    esperadas = None if campanas is None else _etiquetas_esperadas(campanas)
     tabla, avisos = validar_serie(serie)
+    etiquetas = sorted(tabla["campana"].unique())
+    if esperadas is not None:
+        _comparar_con_esperadas(etiquetas, esperadas)
 
     agregado = tabla.groupby("id")["KVPI"].agg(["count", "mean", "std"])
     agregado.loc[agregado["count"] < min_campanas, "std"] = np.nan
@@ -160,5 +253,6 @@ def agregar_kvpi(serie: pd.DataFrame, min_campanas: int = 2) -> ResultadoKvpi:
             "KVPI_cv": cv.to_numpy(),
         }
     )
-    avisos += _avisos_por_planta(por_planta, tabla["campana"].nunique(), min_campanas)
-    return ResultadoKvpi(por_planta, avisos)
+    avisos += _avisos_por_planta(por_planta, len(etiquetas), min_campanas)
+    cobertura, avisos_cobertura = _cobertura_por_campana(tabla, etiquetas, total_plantas, cobertura_minima_campana)
+    return ResultadoKvpi(por_planta, avisos + avisos_cobertura, cobertura)

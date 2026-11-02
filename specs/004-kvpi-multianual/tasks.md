@@ -25,7 +25,7 @@ Lee: `spec.md` (RF-1 a RF-22), `clarificacion.md` y `plan.md`.
   - Cubre: RF-11, RF-12.
   - Hecho cuando: plantas con menos campañas que las etiquetas encontradas dan `PLANTAS_CON_MENOS_CAMPANAS` con la cantidad y el rango de `n_campanas`; plantas con desvío vacío por `min_campanas` dan `SIN_DESVIO`; con una sola campaña en toda la serie sale `SIN_DESVIO` y no `PLANTAS_CON_MENOS_CAMPANAS`.
 
-- [ ] **T4.4. Cobertura por campaña.** `kvpi.agregar_kvpi`.
+- [x] **T4.4. Cobertura por campaña.** `kvpi.agregar_kvpi`.
   - Cubre: RF-20, RF-21, RF-22.
   - Hecho cuando: por cada campaña se informa cuántas plantas tienen dato y qué proporción son del total (`total_plantas` o los `id` distintos de la serie), con 0 para una campaña sin datos; por debajo de `cobertura_minima_campana` sale `CAMPANA_CON_POCOS_DATOS` con campaña, cantidad y proporción; un valor fuera de 0 a 1 → error; con `campanas` indicadas, una faltante o una inesperada → error que las nombra, y una lista vacía o con repetidas → error.
 
