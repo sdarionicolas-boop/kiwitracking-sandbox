@@ -16,6 +16,13 @@ from kiwitracking.campana import estado_frio_de_campana
 from kiwitracking.clima import calcular_clima
 from kiwitracking.clima_parametros import ParametrosClima
 from kiwitracking.io import a_wgs84, cruzar_con_malla, leer_csv, leer_poligono_geojson
+from kiwitracking.kvpi import (
+    CoberturaCampana,
+    agregar_kvpi,
+    preparar_muestreo,
+    unir_con_muestreo,
+    validar_parametros_kvpi,
+)
 from kiwitracking.resultado import Advertencia, ErrorDeEntrada, Resultado
 from kiwitracking.visualizacion import crear_mapa, preparar_mapa
 
@@ -238,4 +245,50 @@ def ejecutar_analisis(
         estado_frio=estado,
         advertencias=preparadas.advertencias + estado.advertencias + resultado.advertencias,
         parametros=_parametros_usados(solicitud),
+    )
+
+
+def _leer_tabla(ruta) -> pd.DataFrame:
+    """Lee un CSV con la lectura de la spec 001; un archivo sin contenido da un error que lo nombra."""
+    ruta = _archivo_existente(ruta)
+    try:
+        return leer_csv(ruta)
+    except pd.errors.EmptyDataError as error:
+        raise ErrorDeEntrada(f"El archivo {ruta.name} está vacío: no tiene filas ni encabezado.") from error
+
+
+@dataclass
+class ResultadoFlujoKvpi:
+    """Lo que informa el comando `kvpi`: la tabla por planta, la cobertura por campaña y los avisos en orden."""
+
+    tabla: pd.DataFrame
+    cobertura: list[CoberturaCampana]
+    n_plantas_muestreo: int
+    advertencias: list[Advertencia] = field(default_factory=list)
+
+
+def ejecutar_kvpi(
+    ruta_serie,
+    ruta_muestreo,
+    min_campanas: int = 2,
+    campanas: list[str] | None = None,
+    cobertura_minima_campana: float = 0.5,
+) -> ResultadoFlujoKvpi:
+    """Agrega la serie de KVPI por planta y la une con el muestreo (RF-15, RF-19). No escribe nada.
+
+    Valida los parámetros antes de leer los archivos. La cobertura de cada campaña se mide contra las plantas
+    del muestreo. Las advertencias salen en el orden: validación, cálculo, cobertura y unión.
+    """
+    validar_parametros_kvpi(min_campanas, campanas, cobertura_minima_campana)
+    serie = _leer_tabla(ruta_serie)
+    muestreo = _leer_tabla(ruta_muestreo)
+    plantas_del_muestreo = len(preparar_muestreo(muestreo)[0])
+
+    agregado = agregar_kvpi(serie, min_campanas, campanas, cobertura_minima_campana, plantas_del_muestreo)
+    tabla, avisos_de_union = unir_con_muestreo(agregado.tabla, muestreo)
+    return ResultadoFlujoKvpi(
+        tabla=tabla,
+        cobertura=agregado.cobertura,
+        n_plantas_muestreo=plantas_del_muestreo,
+        advertencias=agregado.advertencias + avisos_de_union,
     )

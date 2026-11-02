@@ -90,6 +90,7 @@ La verificación contra lo publicado necesita la serie real. La persona responsa
 - Un valor de `KVPI` fuera de lo plausible (por ejemplo, 5): no se valida el rango; solo se exige que sea un número finito.
 - El mismo `id` escrito como número en un archivo y con decimal (`4.0`) en el otro: se compara el valor leído y puede no coincidir (ver dudas abiertas).
 - `KVPI_mean` negativo: se calcula `KVPI_cv` con el signo que resulte; solo 0 lo deja vacío.
+- Plantas de la serie que no están en el muestreo: cuentan en la cobertura de cada campaña (que se mide sobre la serie) y el total son las plantas del muestreo, así que la proporción puede pasar de 100 %. Es una señal de que serie y muestreo no son del mismo lote, y sale junto con `PLANTAS_SIN_COORDENADAS`.
 
 ## Fuera de alcance
 - Descargar imágenes o conectarse a Google Earth Engine.
@@ -119,6 +120,7 @@ La verificación contra lo publicado necesita la serie real. La persona responsa
 - **[NECESITA ACLARACIÓN]** EVI no está acotado a [−1, 1] como dice la metodología, y hay que verificar que la máscara de nubes `QA60` siga completada en las imágenes posteriores a 2022. Ambos puntos pertenecen al paso de Earth Engine.
 
 ## Historial de cambios
+- **T4.6 (02/11/2026).** Se documentó como caso límite que la cobertura puede pasar de 100 % cuando la serie trae plantas fuera del muestreo.
 - **T4.5 (02/11/2026).** Al escribir los tests de la unión se precisaron RF-13 y RF-14: el muestreo vacío, con `id` vacíos o con `X`/`Y` no numéricas es un error; una planta con `X` o `Y` vacías cuenta como sin coordenadas; el aviso de repetidos del muestreo se llama `MUESTREO_DUPLICADO`; `PLANTAS_SIN_COORDENADAS` nombra hasta 10 `id`.
 - **Clarificación (01/11/2026).** Se cerró C10: si una exportación futura supera la tolerancia de 1e-12, el test falla y se investiga; la tolerancia no se ajusta, y un cambio legítimo del valor de referencia se hace con un cambio de spec (criterio 3).
 - **Clarificación (01/11/2026).** Se resolvió C7: las plantas del muestreo sin serie quedan fuera, la advertencia `PLANTAS_SIN_SERIE` nombra hasta 10 `id` y explica que la huella depende de qué plantas quedan (RF-13).

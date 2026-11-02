@@ -37,7 +37,7 @@ Lee: `spec.md` (RF-1 a RF-22), `clarificacion.md` y `plan.md`.
 
 ## Comando
 
-- [ ] **T4.6. Flujo del comando.** `flujo.ejecutar_kvpi`.
+- [x] **T4.6. Flujo del comando.** `flujo.ejecutar_kvpi`.
   - Cubre: RF-15, RF-19.
   - Hecho cuando: lee la serie y el muestreo con `leer_csv` (UTF-8, BOM); un archivo inexistente da un error que lo nombra; pasa `total_plantas` igual a las plantas del muestreo; devuelve la tabla, la cobertura y las advertencias en orden (validación, cálculo, cobertura, unión); no modifica los archivos de entrada (se comparan los bytes).
 

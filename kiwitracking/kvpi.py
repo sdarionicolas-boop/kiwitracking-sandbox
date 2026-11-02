@@ -217,6 +217,16 @@ def _cobertura_por_campana(
     return cobertura, avisos
 
 
+def validar_parametros_kvpi(
+    min_campanas, campanas=None, cobertura_minima_campana=0.5, total_plantas=None
+) -> list[str] | None:
+    """Detiene el proceso con ErrorDeEntrada si un parámetro no sirve; devuelve las campañas esperadas limpias."""
+    _validar_min_campanas(min_campanas)
+    _validar_cobertura_minima(cobertura_minima_campana)
+    _validar_total_plantas(total_plantas)
+    return None if campanas is None else _etiquetas_esperadas(campanas)
+
+
 def agregar_kvpi(
     serie: pd.DataFrame,
     min_campanas: int = 2,
@@ -230,10 +240,7 @@ def agregar_kvpi(
     `min_campanas` campañas con dato el desvío y el CV quedan vacíos; el promedio se conserva. Los `id` salen
     como texto y la tabla ordenada por `id`. No modifica la serie.
     """
-    _validar_min_campanas(min_campanas)
-    _validar_cobertura_minima(cobertura_minima_campana)
-    _validar_total_plantas(total_plantas)
-    esperadas = None if campanas is None else _etiquetas_esperadas(campanas)
+    esperadas = validar_parametros_kvpi(min_campanas, campanas, cobertura_minima_campana, total_plantas)
     tabla, avisos = validar_serie(serie)
     etiquetas = sorted(tabla["campana"].unique())
     if esperadas is not None:
@@ -272,7 +279,7 @@ def _nombrar_ids(ids: list[str]) -> str:
     return f"{', '.join(ids[:MAX_PARES_EN_EL_ERROR])}{mas}"
 
 
-def _preparar_muestreo(muestreo: pd.DataFrame) -> tuple[pd.DataFrame, list[Advertencia]]:
+def preparar_muestreo(muestreo: pd.DataFrame) -> tuple[pd.DataFrame, list[Advertencia]]:
     """RF-14: valida el muestreo y deja `id` como texto, `X` e `Y` como números y un solo registro por `id`."""
     faltantes = [columna for columna in ("id", "X", "Y") if columna not in muestreo.columns]
     if faltantes:
@@ -319,7 +326,7 @@ def unir_con_muestreo(por_planta: pd.DataFrame, muestreo: pd.DataFrame) -> tuple
     `KVPI_cv`, `n_campanas` y después las demás columnas del muestreo. Los `id` se comparan como texto. Una
     columna del muestreo con el nombre de una de resultado se reemplaza por la calculada. No modifica las tablas.
     """
-    tabla, avisos = _preparar_muestreo(muestreo)
+    tabla, avisos = preparar_muestreo(muestreo)
     con_coordenadas = tabla["X"].notna() & tabla["Y"].notna()
     ids_de_la_serie = set(por_planta["id"])
     ids_con_coordenadas = set(tabla.loc[con_coordenadas, "id"])
