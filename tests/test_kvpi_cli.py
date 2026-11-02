@@ -20,6 +20,12 @@ SERIE = (
 MUESTREO = "id,X,Y,row_index\n4,10.5,-20.5,1\n26,11.5,-21.5,2\n31,12.5,-22.5,3\n99,13.5,-23.5,4\n"
 
 
+@pytest.fixture(autouse=True)
+def _carpeta_de_trabajo_aislada(tmp_path, monkeypatch):
+    """Un test que olvide `--salida` escribe en su carpeta temporal y no en la del proyecto."""
+    monkeypatch.chdir(tmp_path)
+
+
 @pytest.fixture
 def entradas(tmp_path):
     serie, muestreo = tmp_path / "serie.csv", tmp_path / "muestreo.csv"

@@ -57,7 +57,7 @@ Lee: `spec.md` (RF-1 a RF-22), `clarificacion.md` y `plan.md`.
 
 ## Cierre
 
-- [ ] **T4.10. Validación final.**
+- [x] **T4.10. Validación final.**
   - Cubre: criterio 6 de la spec (cada RF con test).
   - Hecho cuando: existe `validacion.md` con la matriz de los 22 RF contra sus tests y el estado de cada criterio; la suite completa pasa con `-W error` sin tests saltados; se hicieron mutaciones (divisor del desvío, qué cuenta como repetido igual, umbral de `min_campanas`, cobertura contra el total equivocado, orden de las columnas de salida, advertencia de huella en `PLANTAS_SIN_SERIE`) y cada una hace fallar al menos un test; el trabajo queda commiteado.
 
