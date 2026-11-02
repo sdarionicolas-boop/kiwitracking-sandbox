@@ -5,6 +5,8 @@ Cada función devuelve el texto del archivo; escribirlo en disco (con limpieza s
 
 import json
 import math
+import os
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -118,3 +120,39 @@ def escribir_resultados(carpeta, flujo: ResultadoFlujo, sobrescribir: bool = Fal
             carpeta.rmdir()
         raise ErrorDeEntrada(f"No se pudo escribir {nombre or carpeta.name}: {error.strerror or error}.") from error
     return escritos
+
+
+def escribir_plantas_kvpi(ruta, tabla: pd.DataFrame, sobrescribir: bool = False) -> Path:
+    """Escribe el CSV del comando `kvpi` y devuelve su ruta (spec 004, RF-16 y RF-19).
+
+    UTF-8 sin BOM, `\\n` como salto de línea, números completos y celdas vacías para los vacíos. Escribe primero un
+    archivo temporal en la misma carpeta y lo mueve al destino recién cuando está completo, así que ante un error
+    no queda un archivo a medio escribir y el archivo anterior (con `sobrescribir`) queda intacto. Crea la carpeta
+    si no existe, y la borra si ella misma la creó y algo falla.
+    """
+    destino = Path(ruta)
+    if destino.is_dir():
+        raise ErrorDeEntrada(f"{destino.name} es una carpeta: indicá un archivo CSV para la salida.")
+    if destino.exists() and not sobrescribir:
+        raise ErrorDeEntrada(f"El archivo {destino.name} ya existe: usá --sobrescribir para reemplazarlo.")
+
+    contenido = tabla.to_csv(index=False, lineterminator="\n").encode("utf-8")
+    por_crear = [carpeta for carpeta in reversed(destino.parents) if not carpeta.exists()]
+    temporal = None
+    try:
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        descriptor, nombre = tempfile.mkstemp(dir=destino.parent, prefix=f".{destino.name}.", suffix=".tmp")
+        os.close(descriptor)
+        temporal = Path(nombre)
+        temporal.write_bytes(contenido)
+        os.replace(temporal, destino)
+    except OSError as error:
+        if temporal is not None:
+            temporal.unlink(missing_ok=True)
+        for carpeta in reversed(por_crear):
+            try:
+                carpeta.rmdir()
+            except OSError:
+                break
+        raise ErrorDeEntrada(f"No se pudo escribir {destino.name}: {error.strerror or error}.") from error
+    return destino

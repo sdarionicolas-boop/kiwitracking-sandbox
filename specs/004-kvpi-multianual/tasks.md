@@ -41,7 +41,7 @@ Lee: `spec.md` (RF-1 a RF-22), `clarificacion.md` y `plan.md`.
   - Cubre: RF-15, RF-19.
   - Hecho cuando: lee la serie y el muestreo con `leer_csv` (UTF-8, BOM); un archivo inexistente da un error que lo nombra; pasa `total_plantas` igual a las plantas del muestreo; devuelve la tabla, la cobertura y las advertencias en orden (validación, cálculo, cobertura, unión); no modifica los archivos de entrada (se comparan los bytes).
 
-- [ ] **T4.7. Escritura del resultado.** `salida.escribir_plantas_kvpi`.
+- [x] **T4.7. Escritura del resultado.** `salida.escribir_plantas_kvpi`.
   - Cubre: RF-16, RF-19.
   - Hecho cuando: el archivo sale en UTF-8 sin BOM, con `\n`, números completos y celdas vacías en blanco; si existe y no se indicó `--sobrescribir`, error sin tocarlo; con `--sobrescribir` lo reemplaza; si falla la escritura (simulada) no queda un archivo a medio escribir.
 
