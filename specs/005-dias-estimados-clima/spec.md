@@ -49,12 +49,12 @@ Amplía el RF-8 de la spec 002 (las columnas extra se ignoraban: `origen` deja d
 - **RF-10.** SI se indica `--origenes-estimados` sin `--clima`, ENTONCES el comando DEBE terminar con el error de las demás opciones de clima (RF-24 de la spec 003). La opción recibe los valores separados por comas, sin espacios al inicio ni al final; un valor vacío da un error.
 
 **Resumen**
-- **RF-11.** `resumen.json` DEBE incluir en `estado_frio`, cuando el origen es `clima`, las claves `dias_estimados` y `proporcion_estimada` del período usado, a continuación de `hueco_maximo`; vacías (`null`) si el clima no trae `origen`. Con estado manual o sin estado no se agregan.
+- **RF-11.** `resumen.json` DEBE incluir en `estado_frio`, cuando el origen es `clima`, las claves `dias_estimados` y `proporcion_estimada` del período usado, a continuación de `hueco_maximo`; vacías (`null`) si el clima no trae `origen`. Con estado manual o sin estado no se agregan. Además, `parametros.clima` DEBE incluir `origenes_estimados` (la lista usada, aunque sea la de por defecto), a continuación de `campana`, siempre que se use `--clima`.
 
 ## Requisitos no funcionales
 - No se agregan dependencias (constitución #1).
 - El núcleo no lee ni escribe archivos (constitución #6, #9); el valor por defecto de `origenes_estimados` vive en `ParametrosClima` (constitución #7).
-- Un clima sin la columna `origen` produce exactamente los mismos resultados que antes de esta spec: la tabla `frio` y `COLUMNAS_FRIO` no cambian y los 1.230 tests actuales siguen pasando sin modificarse.
+- Un clima sin la columna `origen` produce exactamente los mismos resultados que antes de esta spec: la tabla `frio` y `COLUMNAS_FRIO` no cambian y los 1.230 tests actuales siguen pasando sin modificarse, salvo uno: el de la spec 003 que compara el diccionario completo de `parametros.clima`, que gana la clave `origenes_estimados`.
 
 ## Casos límite
 - Todos los días de la ventana son estimados: `dias_estimados` igual a los disponibles, proporción 100 %, aviso.
@@ -86,6 +86,7 @@ Amplía el RF-8 de la spec 002 (las columnas extra se ignoraban: `origen` deja d
 - **[NECESITA ACLARACIÓN]** Condiciones de uso de los datos de INTA (ver `AGENTS.md`): siguen sin verificarse antes de abrir el repositorio.
 
 ## Historial de cambios
+- **Clarificación (02/11/2026).** Se resolvió C3: `parametros.clima` de `resumen.json` registra siempre `origenes_estimados` (RF-11).
 - **Clarificación (02/11/2026).** Se resolvió C1: con fechas repetidas se usa el `origen` de la primera aparición, la regla de la spec 002; se quitó el criterio conservador (RF-4).
 - **Clarificación (02/11/2026).** Se resolvió C2: el recuento por ventana va en un campo nuevo `ResultadoClima.estimados`, sin tocar la tabla `frio` ni `COLUMNAS_FRIO` (RF-1, RF-2 y requisitos no funcionales).
 - **Borrador (02/11/2026).** Alcance acordado en la entrevista: solo avisar (sin excluir los días), la columna `origen` con el valor `interpolado` como criterio, configurable, y aviso siempre que haya al menos un día estimado en el período que decide el estado de frío.
