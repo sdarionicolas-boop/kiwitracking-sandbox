@@ -1,11 +1,12 @@
 """GDD por temporada y horas de frío por ventana a partir de temperaturas diarias (spec 002)."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pandas as pd
 
 from kiwitracking.clima_calculo import gdd_diario, horas_frio_diarias
-from kiwitracking.clima_entrada import preparar_clima
+from kiwitracking.clima_entrada import preparar_clima_con_origen
+from kiwitracking.clima_origen import contar_estimados, estimados_vacios
 from kiwitracking.clima_parametros import ParametrosClima
 from kiwitracking.clima_periodos import cobertura_temporadas, cobertura_ventanas, etiqueta_temporada, etiqueta_ventana
 from kiwitracking.resultado import Advertencia
@@ -18,12 +19,14 @@ COLUMNAS_FRIO = [
 
 @dataclass
 class ResultadoClima:
-    """`gdd`: una fila por temporada; `frio`: una fila por ventana de frío; `advertencias`: en orden."""
+    """`gdd`: una fila por temporada; `frio`: una fila por ventana de frío; `advertencias`: en orden;
+    `estimados`: días estimados por ventana (spec 005), sin filas si el clima no trae `origen`."""
 
     gdd: pd.DataFrame
     frio: pd.DataFrame
     advertencias: list[Advertencia]
     ventana_frio: str
+    estimados: pd.DataFrame = field(default_factory=estimados_vacios)
 
 
 def formatear_porcentaje(fraccion: float) -> str:
@@ -122,7 +125,8 @@ def calcular_clima(tabla: pd.DataFrame, parametros: ParametrosClima | None = Non
     con el mismo año, la del GDD antes que la del frío.
     """
     parametros = parametros or ParametrosClima()
-    preparada, advertencias = preparar_clima(tabla, parametros)
+    con_origen, advertencias = preparar_clima_con_origen(tabla, parametros)
+    preparada = con_origen.drop(columns="estimado", errors="ignore")
 
     gdd, avisos_gdd = calcular_gdd(preparada, parametros)
     frio, avisos_frio = calcular_frio(preparada, parametros)
@@ -133,4 +137,5 @@ def calcular_clima(tabla: pd.DataFrame, parametros: ParametrosClima | None = Non
         frio=frio,
         advertencias=advertencias + [aviso for _, _, aviso in por_periodo],
         ventana_frio=parametros.ventana_frio,
+        estimados=contar_estimados(con_origen, parametros),
     )

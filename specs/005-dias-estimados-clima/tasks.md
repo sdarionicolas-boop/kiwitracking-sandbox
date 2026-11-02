@@ -16,7 +16,7 @@ Lee: `spec.md` (RF-1 a RF-11), `clarificacion.md` y `plan.md`.
 
 ## Núcleo
 
-- [ ] **T5.2. Recuento por ventana.** `clima_origen.contar_estimados` y `ResultadoClima.estimados`.
+- [x] **T5.2. Recuento por ventana.** `clima_origen.contar_estimados` y `ResultadoClima.estimados`.
   - Cubre: RF-1, RF-2, RF-3, RF-5.
   - Hecho cuando: `calcular_clima` devuelve `estimados` con una fila por ventana con al menos un día disponible (`periodo`, `dias_estimados`, `proporcion_estimada` sobre los días disponibles); un clima armado a mano da los valores contados a mano (ninguno, todos, algunos, con días sin temperaturas y con una ventana incompleta); sin la columna `origen`, `estimados` queda sin filas y la tabla `frio`, `COLUMNAS_FRIO` y las advertencias son idénticas a las de antes; el campo tiene valor por defecto vacío (los `ResultadoClima` armados a mano siguen funcionando).
 
