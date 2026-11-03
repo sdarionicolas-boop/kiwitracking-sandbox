@@ -80,6 +80,10 @@ def construir_parser() -> argparse.ArgumentParser:
     analizar.add_argument("--formato-fecha", help="Formato de las fechas del clima si no son AAAA-MM-DD (con --clima).")
     analizar.add_argument("--cobertura-minima", type=float, help="Cobertura mínima de un período completo (con --clima).")
     analizar.add_argument("--max-hueco-dias", help="Hueco máximo en días, o ninguno (con --clima).")
+    analizar.add_argument(
+        "--origenes-estimados",
+        help="Etiquetas de la columna origen del clima que cuentan como días estimados, separadas por comas (con --clima).",
+    )
     analizar.add_argument("--estado-frio", help="Estado de frío escrito a mano: Deficiente, Adecuado u Óptimo.")
 
     kvpi = subcomandos.add_parser(
@@ -106,6 +110,7 @@ OPCIONES_DE_CLIMA = (
     ("formato_fecha", "--formato-fecha"),
     ("cobertura_minima", "--cobertura-minima"),
     ("max_hueco_dias", "--max-hueco-dias"),
+    ("origenes_estimados", "--origenes-estimados"),
 )
 
 
@@ -129,6 +134,17 @@ def _max_hueco_dias(valor: str) -> int | None:
         return int(valor)
     except ValueError:
         raise ErrorDeEntrada(f"--max-hueco-dias={valor!r} no es válido: usá un número entero de días o 'ninguno'.") from None
+
+
+def _origenes_estimados(valor: str) -> list[str]:
+    """Las etiquetas separadas por comas, sin espacios al inicio ni al final; una etiqueta vacía es un error."""
+    etiquetas = [etiqueta.strip() for etiqueta in valor.split(",")]
+    if "" in etiquetas:
+        raise ErrorDeEntrada(
+            f"--origenes-estimados={valor!r} no es válido: indicá etiquetas separadas por comas, sin valores vacíos "
+            "(por ejemplo, interpolado,estimado)."
+        )
+    return etiquetas
 
 
 def interpretar_analizar(argumentos: argparse.Namespace) -> SolicitudAnalisis:
@@ -164,6 +180,8 @@ def interpretar_analizar(argumentos: argparse.Namespace) -> SolicitudAnalisis:
             parametros_clima[atributo] = getattr(argumentos, atributo)
     if argumentos.max_hueco_dias is not None:
         parametros_clima["max_hueco_dias"] = _max_hueco_dias(argumentos.max_hueco_dias)
+    if argumentos.origenes_estimados is not None:
+        parametros_clima["origenes_estimados"] = _origenes_estimados(argumentos.origenes_estimados)
     if argumentos.clima is not None:
         ParametrosClima(**parametros_clima, campana=argumentos.campana)  # valida antes de leer el clima
 

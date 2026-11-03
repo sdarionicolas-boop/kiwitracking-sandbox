@@ -30,7 +30,7 @@ Lee: `spec.md` (RF-1 a RF-11), `clarificacion.md` y `plan.md`.
   - Cubre: RF-11.
   - Hecho cuando: `EstadoDeFrio` trae `dias_estimados` y `proporcion_estimada` del estado de `clima` (y `None` con estado manual o sin estado); `resumen.json` los escribe en `estado_frio` a continuación de `hueco_maximo` cuando el origen es `clima`, con `null` si el clima no trae `origen`, y no los agrega con estado manual o sin estado; `parametros.clima` incluye `origenes_estimados` como lista, siempre que haya `--clima`, a continuación de `campana`; se actualizan los dos tests de la spec 003 afectados: el que compara el diccionario completo de `parametros.clima` (gana la clave) y el que fija las claves de `estado_frio` con origen `clima` (ganan las dos nuevas); la advertencia `DIAS_ESTIMADOS` llega a `advertencias.json` en su lugar del orden.
 
-- [ ] **T5.5. Opción `--origenes-estimados`.** `cli.py`.
+- [x] **T5.5. Opción `--origenes-estimados`.** `cli.py`.
   - Cubre: RF-10.
   - Hecho cuando: `analizar --clima clima.csv --origenes-estimados a,b` pasa `["a", "b"]` (sin espacios al inicio ni al final) a `ParametrosClima`; sin indicarla se usa el valor por defecto de `ParametrosClima` (no se copia); un valor vacío (`""`, `a,,b`) da un error de entrada con código 1; la opción sin `--clima` da el error de las demás opciones de clima (sola y junto con `--estado-frio`); aparece en la ayuda en español.
 
