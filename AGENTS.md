@@ -45,8 +45,9 @@ versión vieja y descartada: no usar.
   última campaña clasificable pasa a ser la 2023. Lo prueba `tests/test_clima_procedencia.py`: no leer las
   horas de frío de 2024 y 2025 como más firmes de lo que son.
 - El archivo vino de una carpeta de preparación de subidas de otro proyecto; no hay documento que lo
-  describa. Las condiciones de uso de los datos de INTA no se verificaron: el repositorio es privado, y
-  conviene confirmarlas antes de abrirlo.
+  describa. La persona responsable informó (02/11/2026) que los datos de INTA no tienen
+  condiciones de uso declaradas; al abrir el repositorio conviene igual citar a INTA (estación Miramar – EEA
+  Balcarce, SIGA) como fuente.
 
 ## Datos de referencia de la serie de KVPI (spec 004)
 `tests/golden/kvpi_serie.csv` es la serie de KVPI por planta y campaña exportada de Google Earth Engine el
@@ -55,9 +56,10 @@ repetidos ni vacíos. Columnas: `system:index`, `KVPI`, `campaña`, `col`, `id`,
 `id`, `campaña` y `KVPI`. Promedio y desvío muestral (n−1) por `id` reproducen `KVPI_mean` y `KVPI_std` de
 `datos_plantas_completos.csv` con diferencias máximas de 5,6e-17 y 9,7e-17.
 
-- **Procedencia a completar por la persona responsable:** proyecto de Earth Engine y versión de las imágenes
-  (Sentinel-2 SR Harmonized) usadas en la exportación. Sin eso, una diferencia con lo publicado no se puede
-  explicar.
+- **Procedencia:** proyecto de Google Earth Engine `applied-oxygen-459415-e2` (informado por la persona
+  responsable el 02/11/2026). Colección de imágenes: `COPERNICUS/S2_SR_HARMONIZED`, según los notebooks del repo
+  original. Falta, si se quiere dejar completa, la fecha de corte de las imágenes (las colecciones de Earth Engine
+  se reprocesan); sin ella, una diferencia con lo publicado en una exportación futura se investiga sin ese dato.
 - El muestreo (`id`, `X`, `Y`) de las 159 plantas sale de `datos_plantas_completos.csv`: las coordenadas son
   idénticas a las de `muestreo_sistematico.csv` del repo original (verificado en la clarificación).
 
