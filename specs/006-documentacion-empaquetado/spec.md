@@ -19,7 +19,7 @@ No cambia ningún cálculo ni ningún resultado. Salvo una opción nueva, `--ver
 - **H1.** Como investigador/a, quiero instalar el programa con un solo comando y saber qué necesito antes, para no depender de la carpeta del código.
 - **H2.** Como investigador/a, quiero un recorrido completo (`kvpi` → `mapa` → `analizar`) con ejemplos que funcionan, para usarlo con mi propio lote.
 - **H3.** Como investigador/a, quiero que cada opción, cada archivo de salida y cada advertencia estén explicados, para no tener que leer el código.
-- **H4.** Como revisor/a, quiero reproducir con comandos exactos los resultados de la tesis (16 "Mantener", 19 "Intervenir", FC 1,2262), para verificarlos.
+- **H4.** Como revisor/a, quiero reproducir con comandos exactos lo publicado en la tesis (FC 1,2262, 0 "Mantener" y 19 "Intervenir") y, por separado, ver qué agrega el programa con el clima, para no confundir lo uno con lo otro.
 - **H5.** Como investigador/a, quiero saber qué versión tengo instalada (`kiwitracking --version`), para citarla.
 
 ## Entregables
@@ -40,7 +40,7 @@ No cambia ningún cálculo ni ningún resultado. Salvo una opción nueva, `--ver
 - **RF-5.** La guía DEBE explicar los códigos de salida 0, 1, 2 y 3.
 - **RF-6.** La guía DEBE describir cada archivo de entrada (`serie`, `muestreo`, `plantas`, `malla`, `clima`): columnas obligatorias y opcionales, codificación UTF-8, punto decimal, y el sistema de coordenadas que se declara con `--crs-plantas`.
 - **RF-7.** La guía DEBE describir cada archivo de salida: las columnas de `plantas.csv` y de `plantas_kvpi.csv`, la estructura de `resumen.json` y la de `advertencias.json`.
-- **RF-8.** La sección de reproducción DEBE dar los comandos exactos, sobre los datos de `tests/golden/`, que reproducen los resultados de la tesis y los números esperados (53 plantas bajo malla y 106 fuera, FC 1,2262, 16 "Mantener" y 19 "Intervenir", estado de frío "Óptimo" de 2024 con 1.128,8 h). Un test ejecuta esos comandos y comprueba cada número que la guía afirma.
+- **RF-8.** La sección de reproducción DEBE tener dos partes rotuladas, con los comandos exactos sobre los datos de `tests/golden/`: (1) **"Reproducir lo publicado"**: `mapa` y `analizar` con `--prueba-t student`, `--no-escalar-std` y `--estado-frio Deficiente`, que dan 53 plantas bajo malla y 106 fuera, FC 1,2262, valor p de 1,0e-26 (Student), 0 "Mantener" y 19 "Intervenir", y `KVPI_corregido`, ambientes y recomendaciones iguales a los de `datos_plantas_completos.csv`; (2) **"Lo que agrega el programa"**: `analizar` con el clima y `--campana 2024`, que da estado de frío "Óptimo" (1.128,8 h), 16 "Mantener" y 19 "Intervenir", con una nota que explica que esto NO es lo publicado y que 26 de los 123 días de ese invierno son interpolados. La guía NO DEBE presentar nunca los 16 "Mantener" como resultado de la tesis. Un test ejecuta los comandos de las dos partes y comprueba cada número que la guía afirma.
 - **RF-9.** La guía DEBE decir qué NO hace el programa (la parte de Google Earth Engine, la elección de la prueba t de la tesis frente a la por defecto del programa, los días interpolados del clima y su efecto) y qué está verificado y qué no. NO DEBE afirmar nada que no tenga un test o un dato detrás.
 - **RF-10.** Los ejemplos de comandos de la guía NO DEBEN llevar rutas del equipo de quien escribió la guía; usan rutas relativas y los nombres de archivo de los ejemplos.
 
@@ -76,7 +76,7 @@ No cambia ningún cálculo ni ningún resultado. Salvo una opción nueva, `--ver
 ## Criterios de finalización
 1. Todos los tests `RF-n` pasan, con avisos tratados como errores.
 2. **La guía no se desactualiza:** los tests de RF-3, RF-4 y RF-5 comparan la guía con el analizador de argumentos, el código fuente y los códigos de salida.
-3. **Se reproduce la tesis:** los comandos de la sección de reproducción, ejecutados por un test, dan los números que la guía afirma.
+3. **Se reproduce la tesis, y se distingue de lo nuevo:** los comandos de las dos partes de la sección de reproducción, ejecutados por un test, dan los números que la guía afirma, y la parte 2 aclara que no es lo publicado.
 4. **Se construye y se instala:** `python -m build` genera el `wheel` y el `sdist`; el `wheel` se instala en un entorno virtual limpio, crea el comando `kiwitracking`, y `--version`, `--help` y el ejemplo mínimo funcionan desde otra carpeta.
 5. El contenido del `wheel` y del `sdist` es el de RF-13.
 6. Cada requisito tiene al menos un test asociado (fase de Validación).
@@ -90,4 +90,5 @@ No cambia ningún cálculo ni ningún resultado. Salvo una opción nueva, `--ver
 - **[NECESITA ACLARACIÓN]** La prueba t por defecto del programa (Welch) difiere de la de la tesis (Student): la guía lo explica y da `--prueba-t student`, pero conviene decidir si el ejemplo de reproducción usa Student para que el valor p coincida con el de la tesis.
 
 ## Historial de cambios
+- **Clarificación (02/11/2026).** Se resolvió C1: la reproducción tiene dos partes rotuladas, "Reproducir lo publicado" (0 y 19, FC 1,2262, Student) y "Lo que agrega el programa" (16 y 19 con el clima de 2024); la guía nunca presenta los 16 "Mantener" como resultado de la tesis (H4, RF-8, criterio 3).
 - **Borrador (02/11/2026).** Alcance acordado en la entrevista: público investigador/a que reproduce y reutiliza, paquete instalable con pip (sin ejecutable), y la guía en `README.md` y `docs/uso.md` dentro del sandbox, con ejemplos probados contra los datos de referencia.
