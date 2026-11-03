@@ -18,7 +18,7 @@ Lee: `spec.md` (RF-1 a RF-17), `clarificacion.md` y `plan.md`.
   - Cubre: RF-15.
   - Hecho cuando: `kiwitracking.__version__` es la de los metadatos instalados y coincide con la de `pyproject.toml` (si no, el mensaje del test dice que hay que reinstalar con `pip install -e .`); sin metadatos vale `desconocida`; `main(["--version"])` imprime `kiwitracking 1.2.0`, devuelve 0 y no llama a `sys.exit`; también vale con `python -m kiwitracking --version` en un proceso aparte; con metadatos ausentes imprime `kiwitracking desconocida` sin fallar; los tests existentes de la ayuda siguen pasando sin cambios.
 
-- [ ] **T6.3. Dependencias contra imports.**
+- [x] **T6.3. Dependencias contra imports.**
   - Cubre: RF-16.
   - Hecho cuando: un test recorre los imports de `kiwitracking/*.py` con `ast`, descarta la biblioteca estándar (`sys.stdlib_module_names`) y el propio paquete, y comprueba que el resto es exactamente el conjunto de dependencias de `pyproject.toml` (ni de más ni de menos).
 

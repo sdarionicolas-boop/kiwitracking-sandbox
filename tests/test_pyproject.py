@@ -162,3 +162,45 @@ def test_rf11_construccion_con_setuptools_reciente_y_punto_de_entrada(pyproject)
     assert sistema["requires"] == ["setuptools>=77"]
     assert pyproject["project"]["scripts"] == {"kiwitracking": "kiwitracking.cli:main"}
     assert pyproject["tool"]["setuptools"]["packages"] == ["kiwitracking"]
+
+
+# --- T6.3: dependencias declaradas contra imports (RF-16) ---------------------------------------------------------
+
+import ast  # noqa: E402
+import sys  # noqa: E402
+
+
+def _modulos_de_terceros_importados():
+    """Los módulos de nivel superior que importa el paquete, sin la biblioteca estándar ni el propio paquete."""
+    modulos = set()
+    for archivo in sorted((RAIZ / "kiwitracking").glob("*.py")):
+        for nodo in ast.walk(ast.parse(archivo.read_text(encoding="utf-8"))):
+            if isinstance(nodo, ast.Import):
+                modulos |= {alias.name.split(".")[0] for alias in nodo.names}
+            elif isinstance(nodo, ast.ImportFrom) and nodo.level == 0 and nodo.module:
+                modulos.add(nodo.module.split(".")[0])
+    return {m for m in modulos if m not in sys.stdlib_module_names and m != "kiwitracking"}
+
+
+def _nombres_de_dependencias(pyproject):
+    return {re.split(r"[<>=!~ ]", dependencia, maxsplit=1)[0] for dependencia in pyproject["project"]["dependencies"]}
+
+
+def test_rf16_cada_modulo_de_terceros_que_importa_el_paquete_esta_declarado(pyproject):
+    sin_declarar = _modulos_de_terceros_importados() - _nombres_de_dependencias(pyproject)
+    assert not sin_declarar, f"el paquete importa {sorted(sin_declarar)} y pyproject.toml no los declara"
+
+
+def test_rf16_cada_dependencia_declarada_se_usa(pyproject):
+    sin_usar = _nombres_de_dependencias(pyproject) - _modulos_de_terceros_importados()
+    assert not sin_usar, f"pyproject.toml declara {sorted(sin_usar)} y el paquete no los importa"
+
+
+def test_rf16_el_conjunto_es_exactamente_el_esperado(pyproject):
+    esperado = {"folium", "numpy", "pandas", "pyproj", "scipy", "shapely"}
+    assert _modulos_de_terceros_importados() == esperado == _nombres_de_dependencias(pyproject)
+
+
+def test_rf16_pytest_y_build_son_solo_de_desarrollo(pyproject):
+    assert not {"pytest", "build", "setuptools"} & _modulos_de_terceros_importados()
+    assert not {"pytest", "build", "setuptools"} & _nombres_de_dependencias(pyproject)
