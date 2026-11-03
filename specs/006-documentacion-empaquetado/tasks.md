@@ -38,7 +38,7 @@ Lee: `spec.md` (RF-1 a RF-17), `clarificacion.md` y `plan.md`.
   - Cubre: RF-6, RF-7.
   - Hecho cuando: para `serie`, `muestreo`, `plantas`, `malla` y `clima` la guía lista las columnas obligatorias y opcionales (las que validan `validar_serie`, `preparar_muestreo`, la lectura de la spec 001, la malla y `preparar_clima`), la codificación UTF-8, el punto decimal y el sistema de coordenadas de `--crs-plantas`; describe las columnas de `plantas_kvpi.csv` y de `plantas.csv`, la estructura de `resumen.json` (sus claves, incluidas `dias_estimados` y `proporcion_estimada`) y la de `advertencias.json`; tests comprueban que cada columna obligatoria que exige el código figura en la guía y que las claves de un `resumen.json` generado están todas documentadas.
 
-- [ ] **T6.7. Guía: advertencias y códigos de salida.** `docs/uso.md` (secciones 5 y 6).
+- [x] **T6.7. Guía: advertencias y códigos de salida.** `docs/uso.md` (secciones 5 y 6).
   - Cubre: RF-4, RF-5.
   - Hecho cuando: una tabla lista los 26 códigos de advertencia que el programa emite (los extrae un test con `ast`) con su significado y qué hacer; los códigos de salida 0, 1, 2 y 3 figuran en una tabla con su significado; los tests fallan si el código emite una advertencia que la guía no lista o si la guía lista una que ya no existe.
 

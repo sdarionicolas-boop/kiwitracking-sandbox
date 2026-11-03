@@ -221,3 +221,51 @@ Lo escribe `analizar`. Un objeto JSON con cuatro claves; los valores que no se p
 ### `advertencias.json`
 
 Lo escribe `analizar`. Una lista de objetos, en el orden en que se produjeron, cada uno con dos claves: `codigo` (el nombre estable de la advertencia, que se explica en la sección 5) y `mensaje` (el texto para personas). Si no hubo ninguna advertencia, la lista está vacía.
+
+## 5. Advertencias
+
+Una advertencia es un aviso: el comando **no se detiene** y termina con código 0, pero algo del resultado merece que lo mires. Cada una tiene un **código** estable (el nombre de la tabla de abajo, que no cambia entre versiones) y un **mensaje** con el detalle de tu corrida. Se muestran en pantalla (`Advertencia CODIGO: mensaje`) y `analizar` las guarda también en `advertencias.json`. Un problema que impide seguir no es una advertencia sino un error (sección 6).
+
+Las que dicen "no se corrigió" significan que el KVPI quedó sin la corrección por malla: el resto del análisis sigue con los valores sin corregir.
+
+| Código | Qué significa | Qué hacer |
+|---|---|---|
+| `BAJO_MALLA_REEMPLAZADO` | El CSV de plantas ya traía la columna `bajo_malla` y se usó la que calculó el programa con `--malla`, que difiere en algunas plantas. | Revisá cuál de las dos es la correcta; si la del CSV era la buena, corré sin `--malla`. |
+| `CAMPANA_CON_POCOS_DATOS` | Una campaña tiene dato en menos plantas que `--cobertura-minima-campana`: los promedios de las plantas se arman con una campaña menos. | Revisá la exportación de esa campaña (nubes, etiqueta mal escrita); con `--campanas` el comando avisa si falta una por completo. |
+| `CAMPANA_NO_INDICADA` | No se indicó `--campana` y se usó el período más reciente que se pudo clasificar, que puede ser posterior a la última campaña analizada. | Indicá `--campana` con el año del invierno que corresponde. |
+| `COBERTURA_PARCIAL` | En el período del clima faltan algunos días: las horas de frío (o el estado) se calcularon con los días disponibles. | Revisá el clima; con días faltantes las horas de frío pueden estar subestimadas. |
+| `CORRECCION_FORZADA` | Se corrigió por malla con `--correccion forzar`, sin mirar si la diferencia entre grupos es significativa. | Dejá constancia en tu análisis; con `auto` solo se corrige si la diferencia es significativa. |
+| `DIAS_ESTIMADOS` | Parte de los días del período que decide el estado de frío son estimados (por ejemplo interpolados), no mediciones. | Tomá ese estado de frío con cautela; `resumen.json` guarda cuántos días son. |
+| `FALTA_CONFIRMACION` | Se analizó sin la huella del mapa: no se corrigió. Con la línea de comandos no aparece como advertencia: `analizar` sin `--huella` termina con un error (código 1). | Corré `mapa`, revisá el mapa y pasá la huella con `--huella`. |
+| `FECHA_DUPLICADA` | El clima trae fechas repetidas con las mismas temperaturas; se conservó una de cada una. | Revisá el archivo del clima. |
+| `GRUPO_CHICO` | Un grupo (plantas bajo malla o fuera de ella) tiene menos plantas que `--min-plantas-grupo`: no se corrigió. | Revisá la malla; con tan pocas plantas la corrección no es confiable. |
+| `HUELLA_NO_COINCIDE` | La huella no corresponde a los datos: cambió el conjunto de plantas bajo malla, no se corrigió. Con la línea de comandos es un error (código 1), no una advertencia. | Corré `mapa` de nuevo con los mismos archivos que le das a `analizar` y usá la huella nueva. |
+| `ID_DUPLICADO` | El CSV de plantas traía filas repetidas del mismo `id` con los mismos valores; se descartaron las repetidas. | Revisá el archivo; con valores distintos para un mismo `id` es un error. |
+| `KVPI_DUPLICADO` | La serie traía la misma planta y campaña repetida con el mismo valor; se contó una sola vez. | Revisá la exportación. |
+| `MEDIA_NO_POSITIVA` | La media del KVPI de las plantas bajo malla no es mayor que 0: no se puede calcular el factor y no se corrigió. | Revisá los datos y la malla. |
+| `MUESTREO_DUPLICADO` | El muestreo traía filas repetidas con todos los valores iguales; se contó una sola. | Revisá el archivo del muestreo. |
+| `NO_SIGNIFICATIVO` | La diferencia entre las plantas bajo malla y las de fuera no es significativa (p mayor o igual que `--alfa`): no se corrigió. | Es un resultado, no un error. Solo si tenés una razón para corregir igual, usá `--correccion forzar`. |
+| `PERIODO_INCOMPLETO` | Un período del clima no tiene los días suficientes: el GDD se calculó solo con los días disponibles, o la ventana de frío no se clasifica. | Revisá la cobertura del clima. Si la ventana es la de la campaña que pedís con `--campana`, el comando termina con un error; sin `--campana` se usa la más reciente que sí se pueda clasificar. |
+| `PLANTAS_CON_MENOS_CAMPANAS` | Hay plantas con menos campañas con dato que campañas tiene la serie: sus promedios usan menos años. | Mirá `n_campanas` en el resultado y decidí si esas plantas te sirven. |
+| `PLANTAS_EXCLUIDAS` | Se excluyeron del análisis las plantas con `KVPI_mean` vacío. | Revisá por qué no tienen dato (en `kvpi`, `n_campanas` en 0). |
+| `PLANTAS_SIN_COORDENADAS` | Hay plantas de la serie que no están en el muestreo, o que tienen `X` o `Y` vacías: quedan fuera del resultado. | Revisá que los `id` sean los mismos en los dos archivos. |
+| `PLANTAS_SIN_SERIE` | Hay plantas del muestreo sin datos en la serie: quedan fuera del resultado y cambian la huella del lote. | Si la huella cambió entre dos corridas, mirá primero esta advertencia. |
+| `POSIBLE_ERROR_COORDENADAS` | El cruce con la malla dio que todas las plantas o ninguna están bajo malla, lo que suele ser un error de coordenadas. | Revisá `--crs-plantas` y el sistema de coordenadas de la malla. |
+| `P_NO_DISPONIBLE` | No se pudo calcular el valor p porque los grupos no tienen variación: no se corrigió. | Revisá que los valores de KVPI no sean todos iguales. |
+| `SIN_DESVIO` | Hay plantas con menos campañas que `--min-campanas`: su desvío y su coeficiente de variación quedan vacíos y se recomiendan como "Observar". | Si querés desvío para más plantas, bajá `--min-campanas` (mínimo 2) o sumá campañas. |
+| `SIN_ESTADO_FRIO` | No se informó el estado de frío (ni con `--clima` ni con `--estado-frio`, o el clima no tiene un período clasificable): no se aplicó el ajuste por frío. | Dale el clima de la campaña o indicá el estado a mano. |
+| `SIN_PERIODO_CLASIFICABLE` | Ninguna ventana de frío del clima se puede clasificar por falta de días o por huecos largos: no hay estado de frío. | Revisá la cobertura del clima o ajustá `--cobertura-minima` y `--max-hueco-dias` con criterio. |
+| `STD_CERO` | Hay plantas con `KVPI_std` igual a 0: su estabilidad queda vacía. | Revisá esas plantas: todas sus campañas tienen el mismo valor. |
+
+## 6. Códigos de salida
+
+Cada comando termina con un código que sirve para saber, desde una secuencia de comandos, si anduvo:
+
+| Código | Qué significa |
+|---|---|
+| 0 | Se completó el comando. Puede haber advertencias. `--help` y `--version` también terminan con 0. |
+| 1 | Hubo un error de entrada: algo que le diste no sirve (un archivo que no existe, una columna que falta, una huella que no coincide, un resultado que ya existe sin `--sobrescribir`…). |
+| 2 | Hubo un uso incorrecto del comando: falta una opción obligatoria, una opción que no existe o un valor del tipo equivocado (texto donde va un número). El mensaje es el de la biblioteca de línea de comandos y puede salir en inglés. |
+| 3 | Hubo un error inesperado: un fallo del programa, no de tus datos. |
+
+Los mensajes de error salen por la **salida de errores**, no por la pantalla de resultados. Con el código 1 son `Error: <mensaje>`, sin traza. Con el código 3 son `Error inesperado: <Tipo>: <mensaje>`; si agregás `--depurar` se muestra además la traza completa, que conviene adjuntar al reportar el problema.
