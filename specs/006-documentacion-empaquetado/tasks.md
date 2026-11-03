@@ -52,7 +52,7 @@ Lee: `spec.md` (RF-1 a RF-17), `clarificacion.md` y `plan.md`.
 
 ## README
 
-- [ ] **T6.10. README y ejemplo mínimo.** `README.md`.
+- [x] **T6.10. README y ejemplo mínimo.** `README.md`.
   - Cubre: RF-1, RF-10.
   - Hecho cuando: el README dice qué hace y qué no, cómo instalar, el ejemplo mínimo con los tres comandos (en un bloque marcado, con `HUELLA`), el enlace a `docs/uso.md`, la licencia y una sección "Cómo citar" que remite a `CITATION.cff`; un test ejecuta el ejemplo mínimo con `main(argv)` sobre archivos armados desde `tests/golden/` y da código 0; ninguna ruta del equipo de quien escribió la guía; el test de T6.4 pasa ahora con los archivos reales.
 
