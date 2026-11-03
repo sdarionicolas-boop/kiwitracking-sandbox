@@ -194,14 +194,17 @@ def test_rf25_con_clima_los_parametros_traen_la_seccion_clima():
 
 
 def test_rf25_el_estado_de_frio_del_clima_trae_periodo_horas_cobertura_y_hueco():
-    estado = EstadoDeFrio("clima", "Óptimo", 2024, 1128.8, 1.0, 0)
+    estado = EstadoDeFrio("clima", "Óptimo", 2024, 1128.8, 1.0, 0, dias_estimados=26, proporcion_estimada=0.25)
 
     documento = _cargar(resumen_json(_flujo(_resultado_de(_resumen()), estado=estado)))
 
     assert documento["estado_frio"] == {
         "origen": "clima", "estado": "Óptimo", "periodo": 2024, "horas": 1128.8, "cobertura": 1.0, "hueco_maximo": 0,
+        "dias_estimados": 26, "proporcion_estimada": 0.25,
     }
-    assert list(documento["estado_frio"]) == ["origen", "estado", "periodo", "horas", "cobertura", "hueco_maximo"]
+    assert list(documento["estado_frio"]) == [
+        "origen", "estado", "periodo", "horas", "cobertura", "hueco_maximo", "dias_estimados", "proporcion_estimada",
+    ]
 
 
 def test_rf25_un_estado_manual_trae_solo_origen_y_estado():

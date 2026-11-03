@@ -160,6 +160,8 @@ class EstadoDeFrio:
     cobertura: float | None = None
     hueco_maximo: int | None = None
     advertencias: list[Advertencia] = field(default_factory=list)
+    dias_estimados: int | None = None
+    proporcion_estimada: float | None = None
 
 
 def elegir_estado_de_frio(clima, estado_frio: str | None, campana: int | None, parametros_clima: dict) -> EstadoDeFrio:
@@ -183,6 +185,8 @@ def elegir_estado_de_frio(clima, estado_frio: str | None, campana: int | None, p
         cobertura=elegido.cobertura,
         hueco_maximo=elegido.hueco_maximo,
         advertencias=resultado.advertencias + elegido.advertencias,
+        dias_estimados=elegido.dias_estimados,
+        proporcion_estimada=elegido.proporcion_estimada,
     )
 
 
@@ -213,6 +217,7 @@ def _parametros_usados(solicitud: SolicitudAnalisis) -> dict:
             "cobertura_minima": clima.cobertura_minima,
             "max_hueco_dias": clima.max_hueco_dias,
             "campana": clima.campana,
+            "origenes_estimados": list(clima.origenes_estimados),
         }
     return parametros
 

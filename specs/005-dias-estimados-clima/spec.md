@@ -54,7 +54,7 @@ Amplía el RF-8 de la spec 002 (las columnas extra se ignoraban: `origen` deja d
 ## Requisitos no funcionales
 - No se agregan dependencias (constitución #1).
 - El núcleo no lee ni escribe archivos (constitución #6, #9); el valor por defecto de `origenes_estimados` vive en `ParametrosClima` (constitución #7).
-- Un clima sin la columna `origen` produce exactamente los mismos resultados que antes de esta spec: la tabla `frio` y `COLUMNAS_FRIO` no cambian y los 1.230 tests actuales siguen pasando sin modificarse, salvo uno: el de la spec 003 que compara el diccionario completo de `parametros.clima`, que gana la clave `origenes_estimados`.
+- Un clima sin la columna `origen` produce exactamente los mismos resultados que antes de esta spec: la tabla `frio` y `COLUMNAS_FRIO` no cambian y los 1.230 tests actuales siguen pasando sin modificarse, salvo tres de la spec 003: los dos que comparan el diccionario completo de `parametros.clima` (ganan la clave `origenes_estimados`) y el que fija las claves de `estado_frio` con origen `clima` (ganan `dias_estimados` y `proporcion_estimada`).
 
 ## Casos límite
 - Todos los días de la ventana son estimados: `dias_estimados` igual a los disponibles, proporción 100 %, aviso.
@@ -86,6 +86,7 @@ Amplía el RF-8 de la spec 002 (las columnas extra se ignoraban: `origen` deja d
 - **[NECESITA ACLARACIÓN]** Condiciones de uso de los datos de INTA (ver `AGENTS.md`): siguen sin verificarse antes de abrir el repositorio.
 
 ## Historial de cambios
+- **T5.4 (02/11/2026).** Al escribir los tests del resumen se vio que RF-11 modifica tres tests existentes y no uno: la comparación de `parametros.clima` está en dos (`test_flujo` y `test_flujo_golden`) y además hay uno que fija las claves de `estado_frio`. Se corrigió la afirmación de los requisitos no funcionales.
 - **Clarificación (02/11/2026).** Se resolvió C3: `parametros.clima` de `resumen.json` registra siempre `origenes_estimados` (RF-11).
 - **Clarificación (02/11/2026).** Se resolvió C1: con fechas repetidas se usa el `origen` de la primera aparición, la regla de la spec 002; se quitó el criterio conservador (RF-4).
 - **Clarificación (02/11/2026).** Se resolvió C2: el recuento por ventana va en un campo nuevo `ResultadoClima.estimados`, sin tocar la tabla `frio` ni `COLUMNAS_FRIO` (RF-1, RF-2 y requisitos no funcionales).

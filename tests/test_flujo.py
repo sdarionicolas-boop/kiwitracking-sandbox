@@ -545,6 +545,7 @@ def test_rf9_con_clima_los_parametros_usados_traen_la_seccion_clima_con_los_valo
     assert flujo.parametros["clima"] == {
         "ventana_frio": por_defecto.ventana_frio, "formato_fecha": por_defecto.formato_fecha, "cobertura_minima": 0.8,
         "max_hueco_dias": por_defecto.max_hueco_dias, "campana": 2024,
+        "origenes_estimados": list(por_defecto.origenes_estimados),
     }
 
 

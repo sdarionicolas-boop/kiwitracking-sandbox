@@ -74,7 +74,7 @@ Mismas reglas: cada RF tiene un test que lleva su número (`test_rfN_...`), el t
 | `test_cli_estimados.py` | RF-10: la opción, su separación por comas, errores, "solo con `--clima`" | `main(argv)` y `interpretar_analizar` |
 | `test_clima_estimados_golden.py` | Criterios 3 a 5 con el clima real: 26 de 123 en 2024, 4 de 123 en 2023, 8 de 119 en 2025, el aviso, el resumen, 16/19 sin cambios, y el mismo clima sin la columna `origen` | `tests/golden/clima_diario.csv` |
 
-Además se actualiza un test existente: el de la spec 003 que compara el diccionario completo de `parametros.clima` (gana la clave `origenes_estimados`).
+Además se actualizan dos tests existentes de la spec 003: el que compara el diccionario completo de `parametros.clima` (gana la clave `origenes_estimados`) y el que fija las claves de `estado_frio` con origen `clima` (ganan `dias_estimados` y `proporcion_estimada`).
 
 ## 6. Riesgos
 

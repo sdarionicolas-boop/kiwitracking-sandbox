@@ -64,7 +64,14 @@ def resumen_json(flujo: ResultadoFlujo) -> str:
     estado = flujo.estado_frio
     estado_frio = {"origen": estado.origen, "estado": estado.estado}
     if estado.origen == "clima":
-        estado_frio.update(periodo=estado.periodo, horas=estado.horas, cobertura=estado.cobertura, hueco_maximo=estado.hueco_maximo)
+        estado_frio.update(
+            periodo=estado.periodo,
+            horas=estado.horas,
+            cobertura=estado.cobertura,
+            hueco_maximo=estado.hueco_maximo,
+            dias_estimados=estado.dias_estimados,
+            proporcion_estimada=estado.proporcion_estimada,
+        )
     return _texto_json(
         {
             "huella": resumen.huella,

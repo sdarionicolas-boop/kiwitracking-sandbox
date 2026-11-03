@@ -104,6 +104,7 @@ def test_criterio3_el_resumen_registra_los_parametros_de_clima_usados(tmp_path, 
 
     assert _json(tmp_path, "resumen.json")["parametros"]["clima"] == {
         "ventana_frio": "invierno", "formato_fecha": None, "cobertura_minima": 0.8, "max_hueco_dias": 7, "campana": 2024,
+        "origenes_estimados": ["interpolado"],
     }
 
 

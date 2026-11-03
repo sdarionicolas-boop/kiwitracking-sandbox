@@ -26,9 +26,9 @@ Lee: `spec.md` (RF-1 a RF-11), `clarificacion.md` y `plan.md`.
 
 ## Flujo, resumen y línea de comandos
 
-- [ ] **T5.4. Estado en el flujo y en `resumen.json`.** `flujo.py` y `salida.py`.
+- [x] **T5.4. Estado en el flujo y en `resumen.json`.** `flujo.py` y `salida.py`.
   - Cubre: RF-11.
-  - Hecho cuando: `EstadoDeFrio` trae `dias_estimados` y `proporcion_estimada` del estado de `clima` (y `None` con estado manual o sin estado); `resumen.json` los escribe en `estado_frio` a continuación de `hueco_maximo` cuando el origen es `clima`, con `null` si el clima no trae `origen`, y no los agrega con estado manual o sin estado; `parametros.clima` incluye `origenes_estimados` como lista, siempre que haya `--clima`, a continuación de `campana`; se actualiza el test de la spec 003 que compara el diccionario completo (gana la clave); la advertencia `DIAS_ESTIMADOS` llega a `advertencias.json` en su lugar del orden.
+  - Hecho cuando: `EstadoDeFrio` trae `dias_estimados` y `proporcion_estimada` del estado de `clima` (y `None` con estado manual o sin estado); `resumen.json` los escribe en `estado_frio` a continuación de `hueco_maximo` cuando el origen es `clima`, con `null` si el clima no trae `origen`, y no los agrega con estado manual o sin estado; `parametros.clima` incluye `origenes_estimados` como lista, siempre que haya `--clima`, a continuación de `campana`; se actualizan los dos tests de la spec 003 afectados: el que compara el diccionario completo de `parametros.clima` (gana la clave) y el que fija las claves de `estado_frio` con origen `clima` (ganan las dos nuevas); la advertencia `DIAS_ESTIMADOS` llega a `advertencias.json` en su lugar del orden.
 
 - [ ] **T5.5. Opción `--origenes-estimados`.** `cli.py`.
   - Cubre: RF-10.
@@ -49,5 +49,5 @@ Lee: `spec.md` (RF-1 a RF-11), `clarificacion.md` y `plan.md`.
 ## Notas
 
 - Orden de dependencia: T5.0 (parámetro) → T5.1 (entrada) → T5.2 (recuento) → T5.3 (aviso) → T5.4 (flujo y resumen) → T5.5 (línea de comandos) → T5.6 (datos reales) → T5.7.
-- El único test existente que se modifica es el de la spec 003 que compara el diccionario `parametros.clima` (T5.4). Si otra tarea obliga a modificar un test existente, se corta y se consulta.
+- Los únicos tests existentes que se modifican son dos de la spec 003 (T5.4): el de `parametros.clima` y el de las claves de `estado_frio`. Si otra tarea obliga a modificar un test existente, se corta y se consulta.
 - Las dudas abiertas de la clarificación (C4 a C7) no tienen tarea: se resuelven con los comportamientos provisionales de la sección 8 del plan.
