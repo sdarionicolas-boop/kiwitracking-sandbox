@@ -1,23 +1,35 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "kiwitracking"
-version = "0.0.1"
-description = "Sandbox SDD: corrección por malla, clasificación de ambientes y recomendaciones (KiwiTrackingIA)"
-requires-python = ">=3.10"
+version = "1.2.0"
+description = "Corrección por malla, clasificación de ambientes y recomendaciones de manejo para lotes de kiwi, a partir de la serie de KVPI (Sentinel-2) y del clima."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Darío Nicolás Sánchez Leguizamón" }]
+requires-python = ">=3.14"
 dependencies = [
-    "pandas>=2.0",
-    "numpy>=1.26",
-    "scipy>=1.11",
-    "shapely>=2.0",
-    "pyproj>=3.6",
-    "folium>=0.15",
+    "pandas>=3.0",
+    "numpy>=2.5",
+    "scipy>=1.18",
+    "shapely>=2.2",
+    "pyproj>=3.8",
+    "folium>=0.20",
+]
+keywords = ["kiwi", "agricultura de precisión", "teledetección", "sentinel-2", "KVPI", "horas de frío"]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Natural Language :: Spanish",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: GIS",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "build>=1.2", "setuptools>=77"]
 
 [project.scripts]
 kiwitracking = "kiwitracking.cli:main"

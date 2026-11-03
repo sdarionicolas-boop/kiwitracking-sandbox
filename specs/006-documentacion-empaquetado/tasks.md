@@ -10,9 +10,9 @@ Lee: `spec.md` (RF-1 a RF-17), `clarificacion.md` y `plan.md`.
   - Cubre: RF-12, RF-17.
   - Hecho cuando: `LICENSE` es el MIT del repositorio original (mismo texto y año); `CITATION.cff` tiene `cff-version`, `message`, `title`, `authors` (nombre, afiliación y ORCID, **sin correo**), `version: 1.2.0`, `license: MIT`, la referencia a la tesis y el DOI de Zenodo identificado como el del proyecto (no el de esta versión); `.gitignore` incluye `dist/` y `build/` y su comentario sobre los `.xls` de INTA deja de decir "sin verificar"; los tests lo comprueban por texto, sin agregar dependencias.
 
-- [ ] **T6.1. Metadatos de `pyproject.toml`.**
+- [x] **T6.1. Metadatos de `pyproject.toml`.**
   - Cubre: RF-11.
-  - Hecho cuando: `pyproject.toml` declara nombre, versión `1.2.0`, descripción en español sin la palabra "Sandbox", `readme = "README.md"`, `license = "MIT"` con `license-files`, autor sin correo, `requires-python = ">=3.14"`, dependencias con los pisos probados (`pandas>=3.0`, `numpy>=2.5`, `scipy>=1.18`, `shapely>=2.2`, `pyproj>=3.8`, `folium>=0.20`), clasificadores (solo Python 3.14, sin sistema operativo), palabras clave, `build-system` con `setuptools>=77`, y el extra `dev` con `pytest` y `build`; no hay `project.urls`; un test comprueba que las versiones instaladas cumplen los pisos; el entorno de desarrollo se reinstala con `pip install -e .[dev]`.
+  - Hecho cuando: `pyproject.toml` declara nombre, versión `1.2.0`, descripción en español sin la palabra "Sandbox", `readme = "README.md"`, `license = "MIT"` con `license-files`, autor sin correo, `requires-python = ">=3.14"`, dependencias con los pisos probados (`pandas>=3.0`, `numpy>=2.5`, `scipy>=1.18`, `shapely>=2.2`, `pyproj>=3.8`, `folium>=0.20`), clasificadores (solo Python 3.14, sin sistema operativo), palabras clave, `build-system` con `setuptools>=77`, y el extra `dev` con `pytest`, `build` y `setuptools>=77` (los tests construyen sin entorno aislado); no hay `project.urls`; un test comprueba que las versiones instaladas cumplen los pisos; el entorno de desarrollo se reinstala con `pip install -e .[dev]`.
 
 - [ ] **T6.2. Versión y `--version`.** `kiwitracking/__init__.py`, `cli.py`.
   - Cubre: RF-15.

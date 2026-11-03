@@ -77,3 +77,88 @@ def test_el_gitignore_ignora_los_archivos_generados_y_ya_no_dice_condiciones_sin
     assert "dist/" in lineas and "build/" in lineas
     assert "sin verificar" not in "\n".join(lineas)
     assert "*.xls" in lineas  # los originales de INTA se siguen sin versionar
+
+
+# --- T6.1: metadatos de pyproject.toml (RF-11) --------------------------------------------------------------------
+
+import tomllib  # noqa: E402
+from importlib.metadata import version as version_instalada  # noqa: E402
+
+PISOS = {"pandas": (3, 0), "numpy": (2, 5), "scipy": (1, 18), "shapely": (2, 2), "pyproj": (3, 8), "folium": (0, 20)}
+
+
+@pytest.fixture(scope="module")
+def pyproject():
+    return tomllib.loads(_leer("pyproject.toml"))
+
+
+def test_rf11_nombre_version_y_descripcion(pyproject):
+    proyecto = pyproject["project"]
+    assert proyecto["name"] == "kiwitracking"
+    assert proyecto["version"] == "1.2.0"
+    assert len(proyecto["description"]) > 30
+    assert "sandbox" not in proyecto["description"].lower()
+
+
+def test_rf11_readme_y_licencia(pyproject):
+    proyecto = pyproject["project"]
+    assert proyecto["readme"] == "README.md"
+    assert proyecto["license"] == "MIT"
+    assert proyecto["license-files"] == ["LICENSE"]
+    assert not any(c.startswith("License ::") for c in proyecto["classifiers"])  # con SPDX, setuptools lo rechaza
+
+
+def test_rf11_autor_sin_correo(pyproject):
+    autores = pyproject["project"]["authors"]
+    assert autores == [{"name": "Darío Nicolás Sánchez Leguizamón"}]
+
+
+def test_rf11_sin_urls_del_proyecto(pyproject):
+    assert "urls" not in pyproject["project"]
+
+
+def test_rf11_requires_python_y_clasificadores_solo_de_lo_probado(pyproject):
+    proyecto = pyproject["project"]
+    assert proyecto["requires-python"] == ">=3.14"
+    clasificadores = proyecto["classifiers"]
+    assert "Programming Language :: Python :: 3.14" in clasificadores
+    otras_versiones = [c for c in clasificadores if re.match(r"Programming Language :: Python :: 3\.\d+$", c)]
+    assert otras_versiones == ["Programming Language :: Python :: 3.14"]
+    assert not any(c.startswith("Operating System ::") for c in clasificadores)  # solo se probó en Windows 11
+
+
+def test_rf11_clasificadores_de_publico_y_tema(pyproject):
+    clasificadores = pyproject["project"]["classifiers"]
+    assert "Intended Audience :: Science/Research" in clasificadores
+    assert "Natural Language :: Spanish" in clasificadores
+    assert "Topic :: Scientific/Engineering :: GIS" in clasificadores
+
+
+def test_rf11_palabras_clave(pyproject):
+    claves = pyproject["project"]["keywords"]
+    assert len(claves) >= 4 and "kiwi" in claves
+
+
+def test_rf11_dependencias_con_los_pisos_probados(pyproject):
+    esperadas = {f"{nombre}>={mayor}.{menor}" for nombre, (mayor, menor) in PISOS.items()}
+    assert set(pyproject["project"]["dependencies"]) == esperadas
+
+
+def test_rf11_las_versiones_instaladas_cumplen_los_pisos_declarados():
+    for nombre, (mayor, menor) in PISOS.items():
+        instalada = tuple(int(x) for x in version_instalada(nombre).split(".")[:2])
+        assert instalada >= (mayor, menor), f"{nombre} {instalada} está por debajo del piso declarado {mayor}.{menor}"
+
+
+def test_rf11_extra_dev_con_pytest_y_build(pyproject):
+    dev = pyproject["project"]["optional-dependencies"]["dev"]
+    assert any(d.startswith("pytest") for d in dev) and any(d.startswith("build") for d in dev)
+    assert "setuptools>=77" in dev  # la construcción de los tests no usa un entorno aislado
+
+
+def test_rf11_construccion_con_setuptools_reciente_y_punto_de_entrada(pyproject):
+    sistema = pyproject["build-system"]
+    assert sistema["build-backend"] == "setuptools.build_meta"
+    assert sistema["requires"] == ["setuptools>=77"]
+    assert pyproject["project"]["scripts"] == {"kiwitracking": "kiwitracking.cli:main"}
+    assert pyproject["tool"]["setuptools"]["packages"] == ["kiwitracking"]
