@@ -48,7 +48,7 @@ No cambia ningún cálculo ni ningún resultado. Salvo una opción nueva, `--ver
 - **RF-11.** `pyproject.toml` DEBE declarar: nombre, versión, descripción (sin la palabra "Sandbox"), `readme`, licencia MIT, autor, `requires-python`, dependencias con versiones mínimas, clasificadores y palabras clave. Las versiones declaradas DEBEN ser las probadas: `requires-python = ">=3.14"` y, como piso de cada dependencia, la versión (hasta el menor) con que se corrió la suite completa: `pandas>=3.0`, `numpy>=2.5`, `scipy>=1.18`, `shapely>=2.2`, `pyproj>=3.8` y `folium>=0.20`. El clasificador de Python es solo 3.14. Un test comprueba que las versiones instaladas cumplen los pisos declarados, para que no puedan quedar por encima de lo probado. Ampliar el rango (Python 3.10 y versiones anteriores) queda para otra spec.
 - **RF-12.** El repositorio DEBE tener el archivo `LICENSE` (MIT, el mismo texto del repositorio original) y el paquete construido DEBE incluirlo.
 - **RF-13.** `python -m build` DEBE generar el `sdist` y el `wheel` sin errores ni avisos. El `wheel` DEBE contener solo el paquete `kiwitracking`, sus metadatos y la licencia (ni tests, ni specs, ni datos de referencia); el `sdist` DEBE incluir exactamente esta lista (declarada en un `MANIFEST.in` como lista de inclusión): `kiwitracking/`, `tests/` (los `.py` y los datos de `tests/golden/`), `docs/uso.md`, `README.md`, `LICENSE` y `pyproject.toml`, más los metadatos que genera la herramienta. NO DEBE contener nada más: ni `specs/`, ni `AGENTS.md`, `CLAUDE.md` o `docs/constitution.md`, ni `mapa.html`, ni `resultados/`, ni archivos `.xls`, ni `.venv`, `dist/` o `build/`. Un test abre el `sdist` construido y compara su contenido con la lista.
-- **RF-14.** Instalar el `wheel` en un entorno virtual limpio DEBE crear el comando `kiwitracking`; `kiwitracking --help`, `python -m kiwitracking --help` y el ejemplo mínimo del README DEBEN funcionar desde una carpeta que no sea la del código.
+- **RF-14.** Instalar el `wheel` en un entorno virtual limpio (con sus dependencias, descargadas de internet) DEBE crear el comando `kiwitracking`; `kiwitracking --help`, `python -m kiwitracking --help` y el ejemplo mínimo del README DEBEN funcionar desde una carpeta que no sea la del código. Esta comprobación la hace un script (`scripts/probar_instalacion.py`) que se corre aparte de la suite, porque tarda más de un minuto y necesita red (medido: 52 s y 326 MB solo para instalar las dependencias); `validacion.md` DEBE registrar la fecha, la versión y el resultado de esa corrida. Los tests de la suite, que no necesitan entorno nuevo, construyen el `wheel` y el `sdist` e inspeccionan su contenido (RF-13).
 - **RF-15.** La versión DEBE declararse en un solo lugar (`pyproject.toml`). `kiwitracking --version` DEBE imprimir `kiwitracking <versión>` con código de salida 0, y `kiwitracking.__version__` DEBE ser la misma versión.
 - **RF-16.** Cada módulo de terceros que el paquete importa DEBE figurar en las dependencias de `pyproject.toml`, y cada dependencia declarada DEBE usarse. Un test lo comprueba.
 
@@ -63,7 +63,7 @@ No cambia ningún cálculo ni ningún resultado. Salvo una opción nueva, `--ver
 - Un código de advertencia nuevo sin documentar: el test de RF-4 falla.
 - Un ejemplo de la guía cuyo resultado cambia: el test de RF-8 falla.
 - El `wheel` se instala en un entorno sin los datos de `tests/golden/`: el comando y el ejemplo mínimo siguen funcionando con archivos que trae el usuario.
-- Un entorno sin acceso a internet: la construcción necesita descargar `setuptools` y `build` si no están instalados (ver dudas abiertas).
+- Un entorno sin acceso a internet: la construcción necesita `setuptools` y `build` (`build` va en las dependencias opcionales `dev`); sin red y sin ellos instalados, ni la construcción ni la prueba de instalación pueden correr.
 
 ## Fuera de alcance
 - Un ejecutable para Windows (PyInstaller) o un instalador.
@@ -84,12 +84,13 @@ No cambia ningún cálculo ni ningún resultado. Salvo una opción nueva, `--ver
 ## Dudas abiertas
 - **[NECESITA ACLARACIÓN]** Número de versión: el sandbox está en `0.0.1`; el repositorio original en `1.1.0` (`CITATION.cff`). Falta decidir con cuál sale el paquete.
 - *Resuelta el 02/11/2026 (C4):* se declara solo lo probado (Python 3.14 y las versiones actuales de las dependencias); ampliar el rango queda para otra spec.
-- **[NECESITA ACLARACIÓN]** Construir el paquete necesita `build` y `setuptools`, que hoy no están en el entorno de desarrollo, y descargarlos requiere internet. Un test que construya e instale tardará decenas de segundos y no puede correr sin red; hay que decidir cómo convive con la regla de "sin tests saltados".
+- *Resuelta el 02/11/2026 (C5):* la construcción y la inspección del contenido van en la suite; la instalación en un entorno limpio es un script aparte, registrado en `validacion.md`.
 - **[NECESITA ACLARACIÓN]** URL del proyecto en los metadatos: el repositorio del sandbox es privado; una URL que no abre no sirve a quien instale.
 - **[NECESITA ACLARACIÓN]** Cómo citar: el `CITATION.cff` del repositorio original apunta a la tesis; el sandbox no tiene uno.
 - **[NECESITA ACLARACIÓN]** La prueba t por defecto del programa (Welch) difiere de la de la tesis (Student): la guía lo explica y da `--prueba-t student`, pero conviene decidir si el ejemplo de reproducción usa Student para que el valor p coincida con el de la tesis.
 
 ## Historial de cambios
+- **Clarificación (02/11/2026).** Se resolvió C5: dos pruebas, una rápida en la suite (construir e inspeccionar el `wheel` y el `sdist`) y una lenta aparte (`scripts/probar_instalacion.py`, instalación en un entorno limpio), cuyo resultado se registra en `validacion.md` (RF-13, RF-14).
 - **Clarificación (02/11/2026).** Se resolvió C4: se declaran solo las versiones probadas (`requires-python >=3.14` y pisos en las versiones con que se corrió la suite), y un test comprueba que las instaladas los cumplen (RF-11).
 - **Clarificación (02/11/2026).** Se resolvió C3: el `sdist` lleva una lista explícita de inclusión (`MANIFEST.in`) y un test compara su contenido con ella; nada fuera de la lista viaja por omisión (RF-13).
 - **Clarificación (02/11/2026).** Se resolvió C2: el `sdist` lleva los tests y los datos de `tests/golden/` para poder reproducir; el `wheel` no, y la guía lo dice (RF-8, RF-13).
