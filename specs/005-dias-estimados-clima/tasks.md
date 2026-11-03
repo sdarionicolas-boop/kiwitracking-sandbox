@@ -36,7 +36,7 @@ Lee: `spec.md` (RF-1 a RF-11), `clarificacion.md` y `plan.md`.
 
 ## Datos reales
 
-- [ ] **T5.6. Clima real (criterios 3 a 5).** `test_clima_estimados_golden.py`.
+- [x] **T5.6. Clima real (criterios 3 a 5).** `test_clima_estimados_golden.py`.
   - Cubre: criterios 3, 4 y 5.
   - Hecho cuando: con `clima_diario.csv` el recuento da 4 de 123 en 2023, 26 de 123 en 2024 (21,1 %) y 8 de 119 en 2025; `analizar --clima --campana 2024` trae `DIAS_ESTIMADOS` con esas cifras y `resumen.json` registra `dias_estimados` 26; sin `--campana` el aviso es el de 2025; con y sin la columna `origen` las recomendaciones (16 "Mantener" y 19 "Intervenir"), el estado "Óptimo" y las 1.128,8 horas de 2024 son los mismos; sin la columna `origen`, `resumen.json` trae `null` en los dos campos y no sale ninguna advertencia nueva.
 
