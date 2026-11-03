@@ -65,7 +65,7 @@ Lee: `spec.md` (RF-1 a RF-17), `clarificacion.md` y `plan.md`.
 
 ## Cierre
 
-- [ ] **T6.12. Validación final.**
+- [x] **T6.12. Validación final.**
   - Cubre: criterio 6 de la spec (cada RF con test).
   - Hecho cuando: existe `validacion.md` con la matriz de los 17 RF contra sus tests (RF-14 contra la corrida del script) y el estado de cada criterio; la suite completa pasa con `-W error` **sin tests saltados**; se hicieron mutaciones (una opción sin documentar, un código de advertencia sin documentar, un valor por defecto cambiado, un número de la reproducción cambiado, un archivo de más en el `sdist` o en el `wheel`, una versión desfasada, una dependencia de más) y cada una hace fallar al menos un test; el trabajo queda commiteado.
 
