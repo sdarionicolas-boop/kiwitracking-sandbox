@@ -20,7 +20,7 @@ Lee: `spec.md` (RF-1 a RF-11), `clarificacion.md` y `plan.md`.
   - Cubre: RF-1, RF-2, RF-3, RF-5.
   - Hecho cuando: `calcular_clima` devuelve `estimados` con una fila por ventana con al menos un día disponible (`periodo`, `dias_estimados`, `proporcion_estimada` sobre los días disponibles); un clima armado a mano da los valores contados a mano (ninguno, todos, algunos, con días sin temperaturas y con una ventana incompleta); sin la columna `origen`, `estimados` queda sin filas y la tabla `frio`, `COLUMNAS_FRIO` y las advertencias son idénticas a las de antes; el campo tiene valor por defecto vacío (los `ResultadoClima` armados a mano siguen funcionando).
 
-- [ ] **T5.3. Estado de la campaña y aviso.** `campana.estado_frio_de_campana`.
+- [x] **T5.3. Estado de la campaña y aviso.** `campana.estado_frio_de_campana`.
   - Cubre: RF-6, RF-7, RF-8, RF-2.
   - Hecho cuando: `EstadoCampana` trae `dias_estimados` y `proporcion_estimada` del período elegido (con `campana` indicada y sin indicar); si son mayores que 0 sale `DIAS_ESTIMADOS` con el período, los días estimados, los disponibles, el porcentaje y la aclaración de que no son mediciones, **después** de `CAMPANA_NO_INDICADA` y `COBERTURA_PARCIAL`; con 0 días, sin recuento o sin fila para el período no hay aviso y los valores quedan en 0 o en `None`; el estado, las horas y las demás advertencias son idénticos con y sin la columna `origen`; los campos nuevos están al final y con valor por defecto (las construcciones posicionales de los tests siguen funcionando).
 

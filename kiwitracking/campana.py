@@ -11,7 +11,9 @@ from kiwitracking.resultado import Advertencia, ErrorDeEntrada
 class EstadoCampana:
     """El estado de frío elegido (utilizable como `estado_frio_ultima_campana`) y de qué período salió.
 
-    Si ningún período es clasificable, todo queda vacío salvo las advertencias.
+    Si ningún período es clasificable, todo queda vacío salvo las advertencias. `dias_estimados` y
+    `proporcion_estimada` son el recuento del período elegido (spec 005); quedan vacíos si el clima no
+    trae `origen` o si no hay período elegido.
     """
 
     estado: str | None
@@ -20,6 +22,8 @@ class EstadoCampana:
     cobertura: float | None
     hueco_maximo: int | None
     advertencias: list[Advertencia] = field(default_factory=list)
+    dias_estimados: int | None = None
+    proporcion_estimada: float | None = None
 
 
 def estado_frio_de_campana(resultado: ResultadoClima, campana: int | None = None) -> EstadoCampana:
@@ -65,9 +69,34 @@ def estado_frio_de_campana(resultado: ResultadoClima, campana: int | None = None
                 "con los días disponibles.",
             )
         )
+    dias_estimados, proporcion_estimada = _recuento_del_periodo(resultado, periodo)
+    if dias_estimados:
+        avisos.append(
+            Advertencia(
+                "DIAS_ESTIMADOS",
+                f"Frío, ventana {periodo}: {dias_estimados} de {int(fila['dias_disponibles'])} días "
+                f"({formatear_porcentaje(proporcion_estimada)}) son estimados, no son mediciones; el estado de frío "
+                "depende de ellos.",
+            )
+        )
     return EstadoCampana(
-        str(fila["estado_frio"]), periodo, float(fila["Horas_Frio"]), cobertura, int(fila["hueco_maximo"]), avisos
+        str(fila["estado_frio"]),
+        periodo,
+        float(fila["Horas_Frio"]),
+        cobertura,
+        int(fila["hueco_maximo"]),
+        avisos,
+        dias_estimados,
+        proporcion_estimada,
     )
+
+
+def _recuento_del_periodo(resultado: ResultadoClima, periodo: int) -> tuple[int | None, float | None]:
+    """Los días estimados del período y su proporción, o `(None, None)` si el clima no trae el recuento."""
+    filas = resultado.estimados[resultado.estimados["periodo"] == periodo]
+    if filas.empty:
+        return None, None
+    return int(filas["dias_estimados"].iloc[0]), float(filas["proporcion_estimada"].iloc[0])
 
 
 def _fila_de_la_campana(resultado: ResultadoClima, campana: int):
