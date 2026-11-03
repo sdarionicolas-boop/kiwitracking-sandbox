@@ -58,9 +58,10 @@ Lee: `spec.md` (RF-1 a RF-17), `clarificacion.md` y `plan.md`.
 
 ## Instalación en un entorno limpio
 
-- [ ] **T6.11. Script de instalación.** `scripts/probar_instalacion.py`.
+- [x] **T6.11. Script de instalación.** `scripts/probar_instalacion.py`.
   - Cubre: RF-14.
   - Hecho cuando: el script construye los paquetes, crea un entorno virtual nuevo, instala el `wheel` con sus dependencias desde internet, y desde una carpeta que no es la del código corre `kiwitracking --version`, `kiwitracking --help`, `python -m kiwitracking --help` y el ejemplo mínimo del README con archivos de `tests/golden/`; devuelve un código distinto de 0 y dice qué falló si algo no anda; se corrió una vez y su resultado, con la fecha, la versión y la duración, quedó anotado para `validacion.md`. Un test sin red comprueba que el script existe y que su ayuda y su manejo de errores funcionan (sin crear el entorno).
+  - **Corrida real (03/11/2026):** `python scripts/probar_instalacion.py` → código 0, 82 s en total (construir 9,7 s, crear el entorno 6,3 s, instalar con dependencias 44,3 s, `--version` 10,9 s, `--help` 2,0 s, `python -m kiwitracking --help` 1,8 s, ejemplo mínimo 1,7 + 1,9 + 1,8 s); versión 1.2.0, Python 3.14.0, Windows 11.
 
 ## Cierre
 
