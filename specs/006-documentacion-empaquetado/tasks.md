@@ -42,7 +42,7 @@ Lee: `spec.md` (RF-1 a RF-17), `clarificacion.md` y `plan.md`.
   - Cubre: RF-4, RF-5.
   - Hecho cuando: una tabla lista los 26 códigos de advertencia que el programa emite (los extrae un test con `ast`) con su significado y qué hacer; los códigos de salida 0, 1, 2 y 3 figuran en una tabla con su significado; los tests fallan si el código emite una advertencia que la guía no lista o si la guía lista una que ya no existe.
 
-- [ ] **T6.8. Guía: reproducir los resultados de la tesis.** `docs/uso.md` (sección 7).
+- [x] **T6.8. Guía: reproducir los resultados de la tesis.** `docs/uso.md` (sección 7).
   - Cubre: RF-8.
   - Hecho cuando: hay dos partes rotuladas, "Reproducir lo publicado" (`mapa` y `analizar` con `--prueba-t student --no-escalar-std --estado-frio Deficiente`) y "Lo que agrega el programa" (`analizar` con el clima y `--campana 2024`), con bloques marcados con `<!-- prueba: … -->`, el marcador `HUELLA` y la tabla de resultados esperados; la sección dice que necesita `tests/golden/` (repositorio o `sdist`, no el `wheel`); un test ejecuta los bloques con `main(argv)` sobre una copia de `tests/golden/` y comprueba cada número de la tabla (53 y 106, FC 1,2262, p ≈ 1,0e-26, 0 y 19 en la parte 1; estado "Óptimo", 1.128,8 h, 16 y 19 y `DIAS_ESTIMADOS` 26 de 123 en la parte 2) y que ese número aparece en la guía; la parte 2 aclara que no es lo publicado.
 

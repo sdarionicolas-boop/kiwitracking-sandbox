@@ -269,3 +269,78 @@ Cada comando termina con un código que sirve para saber, desde una secuencia de
 | 3 | Hubo un error inesperado: un fallo del programa, no de tus datos. |
 
 Los mensajes de error salen por la **salida de errores**, no por la pantalla de resultados. Con el código 1 son `Error: <mensaje>`, sin traza. Con el código 3 son `Error inesperado: <Tipo>: <mensaje>`; si agregás `--depurar` se muestra además la traza completa, que conviene adjuntar al reportar el problema.
+
+## 7. Reproducir los resultados de la tesis
+
+Esta sección da los comandos exactos para volver a obtener, con el lote de referencia, los resultados publicados y lo que agrega el programa nuevo. **Son dos cosas distintas y no hay que confundirlas.**
+
+**Qué necesitás.** Los datos de referencia están en `tests/golden/`. Esa carpeta está en el repositorio y en el archivo `sdist` (`kiwitracking-1.2.0.tar.gz`), **pero no en el `wheel`**: quien instaló solo con `pip install` el archivo `.whl` tiene que bajar el `sdist` o clonar el repositorio. Los comandos se corren desde la carpeta que contiene `tests/`, con el programa instalado (sección 1). Los archivos que se usan:
+
+- `tests/golden/datos_plantas_completos.csv`: el lote publicado (159 plantas, con `KVPI_mean`, `KVPI_std` y los resultados publicados).
+- `tests/golden/malla_zona.geojson`: la zona bajo malla.
+- `tests/golden/clima_diario.csv`: el clima diario de la estación Miramar (INTA), con la columna `origen`.
+
+### Reproducir lo publicado
+
+El CSV publicado corresponde a un estado de frío "Deficiente", al desvío sin escalar y a la prueba t de Student (el cuaderno 03 del repositorio original calcula el valor p con `ttest_ind` de `scipy` y sus valores por defecto, que es Student). Con esas opciones el programa reproduce lo publicado. Primero el mapa, que da la huella:
+
+<!-- prueba: publicado-mapa -->
+```bash
+kiwitracking mapa --plantas tests/golden/datos_plantas_completos.csv --malla tests/golden/malla_zona.geojson --crs-plantas EPSG:4326 --salida mapa_publicado.html --sin-fondo-satelital
+```
+
+Después `analizar`, con la huella que mostró el mapa (reemplazá `HUELLA`):
+
+<!-- prueba: publicado-analizar -->
+```bash
+kiwitracking analizar --plantas tests/golden/datos_plantas_completos.csv --malla tests/golden/malla_zona.geojson --crs-plantas EPSG:4326 --huella HUELLA --prueba-t student --no-escalar-std --estado-frio Deficiente --salida resultados_publicado
+```
+
+Y la comparación con las columnas publicadas, que deben salir las tres en `True`:
+
+<!-- prueba: publicado-comparar -->
+```bash
+python -c "import pandas as pd; a = pd.read_csv('resultados_publicado/plantas.csv'); b = pd.read_csv('tests/golden/datos_plantas_completos.csv'); print((a['KVPI_corregido'] - b['KVPI_corregido']).abs().max() < 1e-9, (a['ambiente'] == b['ambiente']).all(), (a['recomendacion'] == b['recomendacion']).all())"
+```
+
+Resultado esperado:
+
+| Qué se comprueba | Valor esperado |
+|---|---|
+| Plantas bajo malla y fuera de ella | 53 y 106 |
+| Huella | c4e55ae105c6 |
+| Factor de corrección (`fc`) | 1,2262 |
+| Valor p con Student (`p_valor`) | 1,0e-26 |
+| Recomendaciones | 0 "Mantener", 19 "Intervenir" y 140 "Observar" |
+| `KVPI_corregido`, `ambiente` y `recomendacion` | iguales a los del CSV publicado (diferencia menor que 1e-9) |
+
+Con la prueba por defecto del programa (Welch, que no supone varianzas iguales) el valor p es 5,9e-35; el factor y las recomendaciones no cambian.
+
+### Lo que agrega el programa
+
+Esto **no es lo publicado**: usa el clima de la estación para calcular el estado de frío de la campaña (que el CSV publicado fijaba en "Deficiente") y, por defecto, escala el desvío con el factor de corrección. Se corre con la misma huella de arriba, porque son las mismas plantas y la misma malla:
+
+<!-- prueba: agrega-analizar -->
+```bash
+kiwitracking analizar --plantas tests/golden/datos_plantas_completos.csv --malla tests/golden/malla_zona.geojson --crs-plantas EPSG:4326 --huella HUELLA --clima tests/golden/clima_diario.csv --campana 2024 --salida resultados_con_clima
+```
+
+Y la misma corrida sin escalar el desvío, para separar los dos efectos:
+
+<!-- prueba: agrega-sin-escalar -->
+```bash
+kiwitracking analizar --plantas tests/golden/datos_plantas_completos.csv --malla tests/golden/malla_zona.geojson --crs-plantas EPSG:4326 --huella HUELLA --clima tests/golden/clima_diario.csv --campana 2024 --no-escalar-std --salida resultados_sin_escalar
+```
+
+Resultado esperado:
+
+| Qué se comprueba | Valor esperado |
+|---|---|
+| Estado de frío | "Óptimo" (período 2024, 1.128,8 h, cobertura 100,0 %) |
+| Recomendaciones, escalando el desvío (primera corrida) | 16 "Mantener", 19 "Intervenir" y 124 "Observar" |
+| Recomendaciones, sin escalar el desvío (segunda corrida) | 15 "Mantener", 19 "Intervenir" y 125 "Observar" |
+| Advertencia `DIAS_ESTIMADOS` | 26 de 123 días (21,1 %) |
+
+Cómo leerlo: con el estado "Deficiente" ninguna planta queda en "Mantener" (0, lo publicado); con el estado "Óptimo" que da el clima quedan 15, y escalar el desvío con el factor de corrección suma una más (16). Las 19 "Intervenir" son las mismas en las tres corridas.
+
+**Un límite importante:** 26 de los 123 días de ese invierno son **interpolados**: INTA no tiene dato de la estación en esos días (el hueco es definitivo) y el archivo trae valores interpolados, no mediciones. Por eso el programa avisa con `DIAS_ESTIMADOS`. El estado de frío de 2024 descansa en ese dato: no lo leas como una medición completa.
