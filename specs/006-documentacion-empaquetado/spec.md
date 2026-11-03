@@ -1,0 +1,93 @@
+# Spec 006 — Guía de uso y paquete instalable
+
+Estado: BORRADOR (pendiente de clarificación)
+
+## Contexto y objetivo
+El sandbox ya hace todo el recorrido: `kvpi` agrega la serie de Earth Engine, `mapa` verifica la malla y da la huella, `analizar` corrige, clasifica y recomienda. Pero hoy **solo quien escribió el código sabe usarlo**: no hay README, no hay guía, la ayuda de la línea de comandos es lo único escrito, y el paquete se instala con `pip install -e .` desde la carpeta de trabajo, con una `description` que dice "Sandbox SDD" y una versión `0.0.1`.
+
+Esta spec cierra eso para el público que realmente va a usar el programa: **un/a investigador/a que sabe abrir una terminal** y quiere instalarlo, correrlo con sus datos y reproducir los resultados de la tesis. Entrega dos cosas:
+- **La documentación de uso** (`README.md` y `docs/uso.md`, en español), con un recorrido completo y ejemplos que se prueban con los datos de referencia, para que la guía no pueda quedar desactualizada sin que un test falle.
+- **Un paquete instalable con pip**: metadatos completos, licencia MIT, y archivos `wheel` y `sdist` que se construyen y se instalan en un entorno limpio.
+
+No cambia ningún cálculo ni ningún resultado. Salvo una opción nueva, `--version`, no cambia el comportamiento del programa.
+
+## Usuarios / actores
+- **Investigador/a** que instala el programa, lo corre con sus datos y reproduce la tesis.
+- **Quien revisa la tesis** y quiere comprobar que los números salen de lo que dice la guía.
+
+## Historias de usuario
+- **H1.** Como investigador/a, quiero instalar el programa con un solo comando y saber qué necesito antes, para no depender de la carpeta del código.
+- **H2.** Como investigador/a, quiero un recorrido completo (`kvpi` → `mapa` → `analizar`) con ejemplos que funcionan, para usarlo con mi propio lote.
+- **H3.** Como investigador/a, quiero que cada opción, cada archivo de salida y cada advertencia estén explicados, para no tener que leer el código.
+- **H4.** Como revisor/a, quiero reproducir con comandos exactos los resultados de la tesis (16 "Mantener", 19 "Intervenir", FC 1,2262), para verificarlos.
+- **H5.** Como investigador/a, quiero saber qué versión tengo instalada (`kiwitracking --version`), para citarla.
+
+## Entregables
+- `README.md` en la raíz del sandbox.
+- `docs/uso.md`.
+- `LICENSE` (MIT) en la raíz.
+- `pyproject.toml` completo.
+- `kiwitracking --version` y `kiwitracking.__version__`.
+- Los archivos `dist/kiwitracking-<versión>-py3-none-any.whl` y `dist/kiwitracking-<versión>.tar.gz`, generados (no versionados).
+
+## Requisitos funcionales
+
+**Documentación**
+- **RF-1.** El `README.md` DEBE decir qué hace el programa y qué no, cómo instalarlo, un ejemplo mínimo de los tres comandos, dónde está la guía completa (`docs/uso.md`), la licencia y cómo citarlo.
+- **RF-2.** `docs/uso.md` DEBE tener, en este orden: requisitos e instalación; el recorrido completo con los tres comandos; los formatos de los archivos de entrada; los archivos de salida; las advertencias; los códigos de salida; cómo reproducir los resultados de la tesis; cómo generar los paquetes; y los límites del programa.
+- **RF-3.** TODAS las opciones de los comandos `kvpi`, `mapa` y `analizar` (las que define el analizador de argumentos) DEBEN estar nombradas en `docs/uso.md`, con una descripción y su valor por defecto cuando lo tienen. Un test compara la guía con el analizador.
+- **RF-4.** TODOS los códigos de advertencia que el programa puede emitir DEBEN figurar en una tabla de `docs/uso.md` con su significado y qué hacer. Un test recorre el código fuente y falla si un código no está en la guía (o si la guía lista uno que ya no existe).
+- **RF-5.** La guía DEBE explicar los códigos de salida 0, 1, 2 y 3.
+- **RF-6.** La guía DEBE describir cada archivo de entrada (`serie`, `muestreo`, `plantas`, `malla`, `clima`): columnas obligatorias y opcionales, codificación UTF-8, punto decimal, y el sistema de coordenadas que se declara con `--crs-plantas`.
+- **RF-7.** La guía DEBE describir cada archivo de salida: las columnas de `plantas.csv` y de `plantas_kvpi.csv`, la estructura de `resumen.json` y la de `advertencias.json`.
+- **RF-8.** La sección de reproducción DEBE dar los comandos exactos, sobre los datos de `tests/golden/`, que reproducen los resultados de la tesis y los números esperados (53 plantas bajo malla y 106 fuera, FC 1,2262, 16 "Mantener" y 19 "Intervenir", estado de frío "Óptimo" de 2024 con 1.128,8 h). Un test ejecuta esos comandos y comprueba cada número que la guía afirma.
+- **RF-9.** La guía DEBE decir qué NO hace el programa (la parte de Google Earth Engine, la elección de la prueba t de la tesis frente a la por defecto del programa, los días interpolados del clima y su efecto) y qué está verificado y qué no. NO DEBE afirmar nada que no tenga un test o un dato detrás.
+- **RF-10.** Los ejemplos de comandos de la guía NO DEBEN llevar rutas del equipo de quien escribió la guía; usan rutas relativas y los nombres de archivo de los ejemplos.
+
+**Empaquetado**
+- **RF-11.** `pyproject.toml` DEBE declarar: nombre, versión, descripción (sin la palabra "Sandbox"), `readme`, licencia MIT, autor, `requires-python`, dependencias con versiones mínimas, clasificadores y palabras clave.
+- **RF-12.** El repositorio DEBE tener el archivo `LICENSE` (MIT, el mismo texto del repositorio original) y el paquete construido DEBE incluirlo.
+- **RF-13.** `python -m build` DEBE generar el `sdist` y el `wheel` sin errores ni avisos. El `wheel` DEBE contener solo el paquete `kiwitracking`, sus metadatos y la licencia (ni tests, ni specs, ni datos de referencia); el `sdist` DEBE incluir el código, el `README.md`, `LICENSE`, `pyproject.toml` y los tests.
+- **RF-14.** Instalar el `wheel` en un entorno virtual limpio DEBE crear el comando `kiwitracking`; `kiwitracking --help`, `python -m kiwitracking --help` y el ejemplo mínimo del README DEBEN funcionar desde una carpeta que no sea la del código.
+- **RF-15.** La versión DEBE declararse en un solo lugar (`pyproject.toml`). `kiwitracking --version` DEBE imprimir `kiwitracking <versión>` con código de salida 0, y `kiwitracking.__version__` DEBE ser la misma versión.
+- **RF-16.** Cada módulo de terceros que el paquete importa DEBE figurar en las dependencias de `pyproject.toml`, y cada dependencia declarada DEBE usarse. Un test lo comprueba.
+
+## Requisitos no funcionales
+- Todo en español, igual que el resto del sandbox; los comandos y los nombres de archivo van en bloques de código.
+- La documentación NO DEBE duplicar los valores por defecto de forma que un cambio en el código la desactualice sin aviso: las pruebas de RF-3 los comparan con el analizador.
+- El empaquetado no agrega dependencias de ejecución (constitución #1); `build` es una herramienta de desarrollo y va en las dependencias opcionales `dev`.
+- No se publica nada en ningún índice de paquetes ni se sube nada: la construcción es local.
+
+## Casos límite
+- Una opción que se agrega al analizador sin documentar: el test de RF-3 falla.
+- Un código de advertencia nuevo sin documentar: el test de RF-4 falla.
+- Un ejemplo de la guía cuyo resultado cambia: el test de RF-8 falla.
+- El `wheel` se instala en un entorno sin los datos de `tests/golden/`: el comando y el ejemplo mínimo siguen funcionando con archivos que trae el usuario.
+- Un entorno sin acceso a internet: la construcción necesita descargar `setuptools` y `build` si no están instalados (ver dudas abiertas).
+
+## Fuera de alcance
+- Un ejecutable para Windows (PyInstaller) o un instalador.
+- Publicar en PyPI, crear un repositorio público o configurar integración continua.
+- Una guía para técnicos de campo sin experiencia en terminal.
+- Cambiar el comportamiento o los resultados del programa, salvo agregar `--version`.
+- Documentar la parte de Google Earth Engine (los notebooks del repositorio original).
+- Editar `docs/` del repositorio original (la corrección de `metodologia.md` queda como texto para aplicar a mano).
+
+## Criterios de finalización
+1. Todos los tests `RF-n` pasan, con avisos tratados como errores.
+2. **La guía no se desactualiza:** los tests de RF-3, RF-4 y RF-5 comparan la guía con el analizador de argumentos, el código fuente y los códigos de salida.
+3. **Se reproduce la tesis:** los comandos de la sección de reproducción, ejecutados por un test, dan los números que la guía afirma.
+4. **Se construye y se instala:** `python -m build` genera el `wheel` y el `sdist`; el `wheel` se instala en un entorno virtual limpio, crea el comando `kiwitracking`, y `--version`, `--help` y el ejemplo mínimo funcionan desde otra carpeta.
+5. El contenido del `wheel` y del `sdist` es el de RF-13.
+6. Cada requisito tiene al menos un test asociado (fase de Validación).
+
+## Dudas abiertas
+- **[NECESITA ACLARACIÓN]** Número de versión: el sandbox está en `0.0.1`; el repositorio original en `1.1.0` (`CITATION.cff`). Falta decidir con cuál sale el paquete.
+- **[NECESITA ACLARACIÓN]** Versiones mínimas de las dependencias: hoy se declaran (`pandas>=2.0`, `numpy>=1.26`…) sin haberlas probado; el código solo se probó con las más recientes (Python 3.14). Conviene declarar lo que se probó, o probar las mínimas.
+- **[NECESITA ACLARACIÓN]** Construir el paquete necesita `build` y `setuptools`, que hoy no están en el entorno de desarrollo, y descargarlos requiere internet. Un test que construya e instale tardará decenas de segundos y no puede correr sin red; hay que decidir cómo convive con la regla de "sin tests saltados".
+- **[NECESITA ACLARACIÓN]** URL del proyecto en los metadatos: el repositorio del sandbox es privado; una URL que no abre no sirve a quien instale.
+- **[NECESITA ACLARACIÓN]** Cómo citar: el `CITATION.cff` del repositorio original apunta a la tesis; el sandbox no tiene uno.
+- **[NECESITA ACLARACIÓN]** La prueba t por defecto del programa (Welch) difiere de la de la tesis (Student): la guía lo explica y da `--prueba-t student`, pero conviene decidir si el ejemplo de reproducción usa Student para que el valor p coincida con el de la tesis.
+
+## Historial de cambios
+- **Borrador (02/11/2026).** Alcance acordado en la entrevista: público investigador/a que reproduce y reutiliza, paquete instalable con pip (sin ejecutable), y la guía en `README.md` y `docs/uso.md` dentro del sandbox, con ejemplos probados contra los datos de referencia.
