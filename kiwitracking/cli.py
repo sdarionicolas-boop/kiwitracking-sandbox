@@ -9,6 +9,7 @@ import sys
 import traceback
 import unicodedata
 
+import kiwitracking
 from kiwitracking.clima import formatear_porcentaje
 from kiwitracking.clima_parametros import ParametrosClima
 from kiwitracking.flujo import ResultadoFlujo, SolicitudAnalisis, ejecutar_analisis, ejecutar_kvpi, ejecutar_mapa
@@ -49,6 +50,9 @@ def construir_parser() -> argparse.ArgumentParser:
         add_help=False,
     )
     parser.add_argument("-h", "--help", action="help", help="Muestra esta ayuda y termina.")
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {kiwitracking.__version__}", help="Muestra la versión y termina."
+    )
     subcomandos = parser.add_subparsers(dest="comando", metavar="{mapa,analizar,kvpi}", parser_class=_Parser)
     comunes = _opciones_comunes()
 
