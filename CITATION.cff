@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "Si utilizás este software en tu investigación, por favor citá la tesis asociada e indicá la versión que usaste (1.2.0)."
+
+type: software
+title: "KiwiTrackingIA: Sistema de análisis de variabilidad productiva para kiwi"
+version: 1.2.0
+
+authors:
+  - family-names: "Sánchez Leguizamón"
+    given-names: "Darío Nicolás"
+    affiliation: "Universidad Nacional Arturo Jauretche"
+    orcid: "https://orcid.org/0009-0002-4228-2950"
+
+license: MIT
+
+# DOI del proyecto en Zenodo (el del repositorio original); la versión 1.2.0 no tiene DOI propio todavía.
+doi: "10.5281/zenodo.19352552"
+
+keywords:
+  - agriculture
+  - precision agriculture
+  - kiwi
+  - remote sensing
+  - sentinel-2
+  - google earth engine
+
+preferred-citation:
+  type: thesis
+  authors:
+    - family-names: "Sánchez Leguizamón"
+      given-names: "Darío Nicolás"
+  title: "Análisis de variabilidad productiva para kiwi integrando teledetección, topografía y machine learning"
+  year: 2025
+  thesis-type: "Tesis de licenciatura"
+  institution:
+    name: "Universidad Nacional Arturo Jauretche"

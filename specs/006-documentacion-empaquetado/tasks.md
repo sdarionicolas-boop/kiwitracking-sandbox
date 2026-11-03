@@ -6,9 +6,9 @@ Lee: `spec.md` (RF-1 a RF-17), `clarificacion.md` y `plan.md`.
 
 ## Archivos base y metadatos
 
-- [ ] **T6.0. Licencia, cita y `.gitignore`.** `LICENSE`, `CITATION.cff`, `.gitignore`.
+- [x] **T6.0. Licencia, cita y `.gitignore`.** `LICENSE`, `CITATION.cff`, `.gitignore`.
   - Cubre: RF-12, RF-17.
-  - Hecho cuando: `LICENSE` es el MIT del repositorio original (mismo texto y año); `CITATION.cff` tiene `cff-version`, `message`, `title`, `authors` (nombre, afiliación y ORCID, **sin correo**), `version: 1.2.0`, `license: MIT`, la referencia a la tesis y el DOI de Zenodo identificado como el de la `1.1.0`; `.gitignore` incluye `dist/` y `build/` y su comentario sobre los `.xls` de INTA deja de decir "sin verificar"; los tests lo comprueban por texto, sin agregar dependencias.
+  - Hecho cuando: `LICENSE` es el MIT del repositorio original (mismo texto y año); `CITATION.cff` tiene `cff-version`, `message`, `title`, `authors` (nombre, afiliación y ORCID, **sin correo**), `version: 1.2.0`, `license: MIT`, la referencia a la tesis y el DOI de Zenodo identificado como el del proyecto (no el de esta versión); `.gitignore` incluye `dist/` y `build/` y su comentario sobre los `.xls` de INTA deja de decir "sin verificar"; los tests lo comprueban por texto, sin agregar dependencias.
 
 - [ ] **T6.1. Metadatos de `pyproject.toml`.**
   - Cubre: RF-11.

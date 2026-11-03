@@ -5,6 +5,10 @@ __pycache__/
 *.egg-info/
 resultados/
 
-# Descargas de INTA: condiciones de uso sin verificar
+# Paquetes generados
+dist/
+build/
+
+# Descargas originales de INTA (xls): se versiona el CSV de referencia, no el original
 *.xls
 *.xlsx
