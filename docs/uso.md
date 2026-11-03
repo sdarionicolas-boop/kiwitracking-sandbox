@@ -344,3 +344,71 @@ Resultado esperado:
 Cómo leerlo: con el estado "Deficiente" ninguna planta queda en "Mantener" (0, lo publicado); con el estado "Óptimo" que da el clima quedan 15, y escalar el desvío con el factor de corrección suma una más (16). Las 19 "Intervenir" son las mismas en las tres corridas.
 
 **Un límite importante:** 26 de los 123 días de ese invierno son **interpolados**: INTA no tiene dato de la estación en esos días (el hueco es definitivo) y el archivo trae valores interpolados, no mediciones. Por eso el programa avisa con `DIAS_ESTIMADOS`. El estado de frío de 2024 descansa en ese dato: no lo leas como una medición completa.
+
+## 8. Generar los paquetes
+
+Esta sección es para quien quiere construir el paquete o trabajar con el código.
+
+**Preparar el entorno.** Desde la carpeta del repositorio, instalá el programa con las herramientas de desarrollo (`pytest`, `build` y `setuptools`):
+
+```bash
+pip install -e ".[dev]"
+```
+
+**Probar el código.** La suite completa de pruebas se corre con:
+
+```bash
+python -m pytest -W error
+```
+
+**Construir los paquetes.** Antes de construir, **borrá la carpeta `kiwitracking.egg-info`** si existe: `setuptools` lee el `SOURCES.txt` viejo que hay adentro y suma al `sdist` archivos que `MANIFEST.in` no nombra (como `specs/` o `resultados/`). Después:
+
+```bash
+python -m build
+```
+
+Esto deja en `dist/` dos archivos, `kiwitracking-1.2.0-py3-none-any.whl` y `kiwitracking-1.2.0.tar.gz`. La construcción por defecto es aislada y descarga `setuptools`, así que necesita internet; con `python -m build --no-isolation` usa el `setuptools` ya instalado (por eso va en el extra `dev`). Qué lleva cada uno:
+
+- **El `wheel`** lleva solo el paquete `kiwitracking`, sus metadatos y la licencia; no lleva tests ni datos de referencia.
+- **El `sdist`** lleva el código, los tests (con los datos de `tests/golden/`), `docs/uso.md`, `README.md`, `LICENSE`, `CITATION.cff` y `pyproject.toml`. No lleva `specs/`, ni los resultados de una corrida, ni los archivos originales de INTA. Qué entra lo decide la lista de inclusión de `MANIFEST.in`.
+
+**Probar la instalación en un entorno limpio.** Los tests de la suite construyen los paquetes sin red, pero no instalan en un entorno nuevo. Eso lo hace un script aparte, que tarda más de un minuto y necesita internet porque descarga las dependencias:
+
+```bash
+python scripts/probar_instalacion.py
+```
+
+Crea un entorno virtual nuevo, instala el `wheel` con sus dependencias y, desde otra carpeta, corre `kiwitracking --version`, `kiwitracking --help`, `python -m kiwitracking --help` y el ejemplo mínimo del `README.md`. Termina con un código distinto de 0 si algo falla.
+
+**Cambiar la versión.** El número de versión se escribe en un solo lugar, `pyproject.toml`, y en `CITATION.cff`. Después de cambiarlo hay que reinstalar el entorno de desarrollo (`pip install -e ".[dev]"`): `kiwitracking --version` lee la versión de los metadatos instalados, y una prueba falla con un mensaje que lo recuerda si quedaron desfasados.
+
+## 9. Límites del programa
+
+Lo que el programa **no** hace, lo que está verificado y lo que no.
+
+**Qué no hace.**
+- **El paso de Google Earth Engine no lo hace.** El programa parte de la serie de KVPI ya exportada: no descarga imágenes, no calcula NDVI, NDRE, NDMI ni EVI, no calcula la mediana por campaña ni aplica la máscara de nubes. Ese paso está en los cuadernos del repositorio original, con imágenes `COPERNICUS/S2_SR_HARMONIZED`.
+- **Un solo lote por corrida, con una sola malla.** No compara lotes entre sí.
+
+**Diferencias con lo publicado.**
+- **La prueba t.** La tesis usa Student; el programa usa Welch por defecto, que no supone varianzas iguales. Con `--prueba-t student` se obtiene el valor p de la tesis (sección 7); el factor de corrección y las recomendaciones no cambian.
+- **El estado de frío y el desvío.** El CSV publicado fija un estado de frío "Deficiente" y no escala el desvío; el programa nuevo calcula el estado con el clima y, por defecto, escala el desvío. Por eso da más "Mantener" que lo publicado, que da ninguna (sección 7).
+
+**Los días interpolados del clima.** El clima de referencia trae 58 días interpolados (la estación de INTA no tiene dato en esos días y el hueco es definitivo): 26 de 123 días del invierno 2024, 4 de 123 del de 2023 y 8 de 119 del de 2025. Los días estimados no se excluyen del cálculo: el programa los cuenta y avisa con `DIAS_ESTIMADOS`, pero el estado de frío de esos inviernos descansa en ellos. Sin esos días, 2024 y 2025 no se podrían clasificar.
+
+**Internet.** El mapa pide internet para el fondo satelital; con `--sin-fondo-satelital` no usa la red. La construcción aislada de los paquetes y la prueba de instalación también necesitan internet.
+
+**Qué está verificado.**
+- El comando `kvpi` reproduce `KVPI_mean` y `KVPI_std` publicados de las 159 plantas del lote de referencia con una diferencia menor que 1e-12.
+- El flujo reproduce los resultados publicados del lote de referencia (sección 7).
+- Las opciones y sus valores por defecto, las advertencias, los códigos de salida, las columnas de los archivos y los números de la sección 7 los comprueba una prueba del repositorio, que falla si la guía y el programa dejan de coincidir.
+
+**Qué no está verificado.**
+- **Lotes, cultivos y mallas distintos.** Solo se probó con el lote de referencia: con otros lotes, otros cultivos u otras mallas no está verificado.
+- **La exportación de Earth Engine.** Se supone que un punto sin píxel válido en una campaña no genera una fila con `KVPI` vacío sino que la fila no existe; la serie de referencia no permite confirmarlo. Por eso, si una campaña falta por completo en toda la exportación, `kvpi` no lo detecta salvo que se indiquen las campañas esperadas con `--campanas`.
+- **Otros sistemas y versiones.** Solo se probó en Windows 11 con Python 3.14 y las versiones actuales de las bibliotecas; en Linux o macOS no se probó, y con Python o bibliotecas anteriores tampoco está verificado.
+- **Los mensajes de uso.** Los errores de uso (código 2) usan los textos de la biblioteca de línea de comandos y pueden salir en inglés.
+
+**Datos y cita.**
+- El clima de referencia es de la estación Miramar – EEA Balcarce de INTA (SIGA); al reutilizarlo, citá la fuente.
+- La versión 1.2.0 todavía no tiene DOI propio. El DOI de Zenodo que figura en `CITATION.cff` (`10.5281/zenodo.19352552`) es el del proyecto, no el de esta versión; para citar, usá `CITATION.cff`.

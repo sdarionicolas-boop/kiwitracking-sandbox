@@ -46,7 +46,7 @@ Lee: `spec.md` (RF-1 a RF-17), `clarificacion.md` y `plan.md`.
   - Cubre: RF-8.
   - Hecho cuando: hay dos partes rotuladas, "Reproducir lo publicado" (`mapa` y `analizar` con `--prueba-t student --no-escalar-std --estado-frio Deficiente`) y "Lo que agrega el programa" (`analizar` con el clima y `--campana 2024`), con bloques marcados con `<!-- prueba: … -->`, el marcador `HUELLA` y la tabla de resultados esperados; la sección dice que necesita `tests/golden/` (repositorio o `sdist`, no el `wheel`); un test ejecuta los bloques con `main(argv)` sobre una copia de `tests/golden/` y comprueba cada número de la tabla (53 y 106, FC 1,2262, p ≈ 1,0e-26, 0 y 19 en la parte 1; estado "Óptimo", 1.128,8 h, 16 y 19 y `DIAS_ESTIMADOS` 26 de 123 en la parte 2) y que ese número aparece en la guía; la parte 2 aclara que no es lo publicado.
 
-- [ ] **T6.9. Guía: generar los paquetes y límites; orden de los encabezados.** `docs/uso.md` (secciones 8 y 9).
+- [x] **T6.9. Guía: generar los paquetes y límites; orden de los encabezados.** `docs/uso.md` (secciones 8 y 9).
   - Cubre: RF-9, RF-2.
   - Hecho cuando: la sección "Generar los paquetes" explica `pip install -e .[dev]`, `python -m build` y `scripts/probar_instalacion.py`; "Límites del programa" dice qué no hace (el paso de Google Earth Engine), la diferencia entre la prueba t por defecto (Welch) y la de la tesis (Student), los días interpolados del clima y su efecto, que `mapa` necesita internet para el fondo satelital, que solo se probó en Windows 11 con Python 3.14, y que la `1.2.0` no tiene DOI propio; ninguna afirmación sin un test o un dato detrás; un test comprueba que los nueve encabezados están y en el orden de RF-2.
 
