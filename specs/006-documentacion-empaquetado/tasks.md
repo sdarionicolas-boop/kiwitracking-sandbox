@@ -34,7 +34,7 @@ Lee: `spec.md` (RF-1 a RF-17), `clarificacion.md` y `plan.md`.
   - Cubre: RF-3, RF-10, RF-2 (parte).
   - Hecho cuando: existen las secciones "Requisitos e instalación" y "Recorrido completo"; cada opción larga de `kvpi`, `mapa` y `analizar` (las del analizador de argumentos, incluidas `--help` y `--depurar`) y la general `--version` figuran en una línea `` - `--opcion` `` con su descripción; las que tienen valor por defecto en el código (firmas de `analizar`, `ParametrosClima` y `ejecutar_kvpi`) terminan en `(por defecto: <valor>)` con el valor que dan esas firmas; los ejemplos están en una línea, con barras comunes y sin rutas del equipo de quien escribió la guía; un test falla si se agrega una opción al analizador sin documentarla o si la guía nombra una que no existe.
 
-- [ ] **T6.6. Guía: formatos de entrada y archivos de salida.** `docs/uso.md` (secciones 3 y 4).
+- [x] **T6.6. Guía: formatos de entrada y archivos de salida.** `docs/uso.md` (secciones 3 y 4).
   - Cubre: RF-6, RF-7.
   - Hecho cuando: para `serie`, `muestreo`, `plantas`, `malla` y `clima` la guía lista las columnas obligatorias y opcionales (las que validan `validar_serie`, `preparar_muestreo`, la lectura de la spec 001, la malla y `preparar_clima`), la codificación UTF-8, el punto decimal y el sistema de coordenadas de `--crs-plantas`; describe las columnas de `plantas_kvpi.csv` y de `plantas.csv`, la estructura de `resumen.json` (sus claves, incluidas `dias_estimados` y `proporcion_estimada`) y la de `advertencias.json`; tests comprueban que cada columna obligatoria que exige el código figura en la guía y que las claves de un `resumen.json` generado están todas documentadas.
 

@@ -117,3 +117,107 @@ Valen para el programa completo.
 
 - `--help`: muestra la ayuda en la terminal y termina; también sirve con cada comando (por ejemplo, `kiwitracking mapa --help`).
 - `--version`: muestra la versión instalada y termina.
+
+## 3. Formatos de los archivos de entrada
+
+**Todos los CSV** van en UTF-8 (se acepta el BOM que agrega Excel al guardar como UTF-8), con los valores separados por comas, **punto decimal** (`0.45`, no `0,45`) y los nombres de las columnas en la primera fila. Los nombres de las columnas distinguen mayúsculas (`KVPI_mean`, `Tmax`). Una celda vacía es un dato que falta.
+
+### Serie
+
+La serie de KVPI que exporta Earth Engine: una fila por planta y campaña. Es la entrada de `kvpi`.
+
+- **Obligatorias:** `id`, `campaña` (o `campana`, pero no las dos a la vez) y `KVPI`.
+- **Las demás columnas** de la exportación (`.geo`, `row`, `col`, `system:index`…) se ignoran.
+- Una celda de `KVPI` vacía es una campaña sin dato (no es un error). Un texto que no es un número (por ejemplo `n/d`) sí es un error, y con decimales escritos con coma el mensaje lo señala como causa probable.
+- La etiqueta de campaña (`2019_2020`) es un texto: no se interpreta ni se ordena, solo se le quitan los espacios del principio y del final.
+- Una planta con la misma campaña repetida y el mismo valor se cuenta una sola vez (con una advertencia); con valores distintos es un error, porque ningún promedio lo corrige.
+
+### Muestreo
+
+Las coordenadas de las plantas: una fila por planta. Es la otra entrada de `kvpi`.
+
+- **Obligatorias:** `id`, `X` e `Y`.
+- **Las demás columnas** (por ejemplo `row_index`, `col_index`) se conservan y pasan al resultado.
+- Una planta con `X` o `Y` vacías queda fuera, con una advertencia. Un `id` repetido con todos los valores iguales se cuenta una vez; con valores distintos es un error.
+
+### Plantas
+
+El CSV por planta que usan `mapa` y `analizar`. Normalmente es el que escribió `kvpi` (`plantas_kvpi.csv`), pero puede ser cualquier CSV con estas columnas.
+
+- **Obligatorias:** `id`, `KVPI_mean` y `KVPI_std`.
+- **Según el comando:** `X` e `Y` (las necesita `mapa`, y también cualquier comando que reciba `--malla`) y `bajo_malla` (vale `1` bajo malla y `0` fuera; hace falta si no se usa `--malla`, porque con `--malla` se calcula).
+- Una planta con `KVPI_mean` vacío se excluye del análisis (con una advertencia); con `KVPI_std` vacío entra, pero sin estabilidad y con la recomendación "Observar".
+- Las demás columnas (elevación, pendiente…) se conservan al final de `plantas.csv`.
+
+### Malla
+
+La zona bajo malla de protección, como un archivo GeoJSON.
+
+- **Contenido:** un `Polygon` o un `MultiPolygon`, suelto o dentro de un `Feature` o de un `FeatureCollection`; si hay varios polígonos se juntan, y las geometrías que no son polígonos se ignoran. Sin ningún polígono es un error.
+- **Sistema de coordenadas:** el que declara el miembro `crs` del archivo; si no lo trae, `EPSG:4326` (longitud y latitud), como indica el estándar GeoJSON. El de las plantas se declara con `--crs-plantas`; si es distinto, el programa convierte para comparar.
+
+### Clima
+
+El clima diario de la estación. Es opcional para `analizar` (con `--clima`).
+
+- **Obligatorias:** `date`, `Tmax` y `Tmin`.
+- **Opcionales:** `origen`.
+- **La columna `origen`** es un texto libre que dice de dónde sale cada día, por ejemplo `INTA_verificado` o `interpolado`. Con ella el programa avisa cuántos días del período usado son estimados; sin ella no hay aviso.
+- **Fechas:** `AAAA-MM-DD`; con otro formato hay que indicarlo con `--formato-fecha`.
+- **Temperaturas:** en grados Celsius. El programa rechaza valores fuera de -60 a 60 y días con `Tmax` menor que `Tmin`. Un día con una temperatura vacía cuenta como día sin datos.
+- Una fecha repetida con las mismas temperaturas se cuenta una vez (con una advertencia); con temperaturas distintas es un error.
+
+## 4. Archivos de salida
+
+Todos los archivos que escribe el programa van en **UTF-8 sin BOM**, con saltos de línea `\n`, los números con todos los decimales (sin redondear) y **celdas vacías** donde no hay valor. Ningún comando modifica sus archivos de entrada. Si `kvpi` falla al escribir, no deja un archivo a medio escribir (escribe primero un archivo temporal y lo mueve al destino al terminar); si falla `analizar`, borra lo que ya había escrito en esa corrida, salvo con `--sobrescribir`, donde los archivos de una corrida anterior que ya se reemplazaron no se recuperan.
+
+### `plantas_kvpi.csv`
+
+Lo escribe `kvpi`. Una fila por planta, en el orden del muestreo.
+
+- `id`: identificador de la planta.
+- `KVPI_mean`: promedio del KVPI de las campañas con dato.
+- `KVPI_std`: desvío estándar muestral (divisor n−1) de esas campañas; vacío si la planta tiene menos de `--min-campanas`.
+- `KVPI_cv`: coeficiente de variación, `KVPI_std / KVPI_mean`; vacío si el desvío está vacío o el promedio es 0.
+- `n_campanas`: cantidad de campañas con dato.
+- Después, las demás columnas del muestreo (`X`, `Y`…), en su orden.
+
+### `plantas.csv`
+
+Lo escribe `analizar` en la carpeta de resultados. Una fila por planta analizada, en el orden de entrada.
+
+- `id`: identificador de la planta.
+- `KVPI_mean`: el KVPI de entrada.
+- `KVPI_corregido`: el KVPI de las plantas bajo malla multiplicado por el factor de corrección, si se corrigió; si no, igual a `KVPI_mean`.
+- `KVPI_std`: el desvío de entrada.
+- `estabilidad`: `KVPI_corregido / KVPI_std` (con `--no-escalar-std`) o `KVPI_mean / KVPI_std` (por defecto); vacía si `KVPI_std` es 0 o está vacío.
+- `ambiente`: `Alto Potencial` (KVPI corregido en el percentil alto o por encima), `Limitante` (por debajo del percentil bajo) o `Transicional` (el resto), según `--p-ambiente`.
+- `recomendacion`: `Mantener` (estable y de alto potencial), `Intervenir` (estable y limitante) u `Observar` (el resto, y las que no tienen estabilidad). Con estado de frío "Deficiente", ninguna planta queda en `Mantener`.
+- `bajo_malla`: `1` o `0`.
+- Después, las demás columnas de entrada en su orden (`KVPI_cv`, `n_campanas`, `X`, `Y`…).
+
+### `resumen.json`
+
+Lo escribe `analizar`. Un objeto JSON con cuatro claves; los valores que no se pudieron calcular valen `null`.
+
+- `huella`: la huella de 12 caracteres con la que se corrió.
+- `resumen`: el resultado global.
+  - `fc`: factor de corrección (media fuera de malla sobre media bajo malla).
+  - `p_valor`: valor p de la prueba t que compara los dos grupos.
+  - `n_bajo_malla` y `n_fuera_malla`: cantidad de plantas de cada grupo.
+  - `correccion_aplicada`: `true` si se corrigió el KVPI.
+  - `p33` y `p66`: los umbrales de KVPI corregido que separan los ambientes (los percentiles de `--p-ambiente`).
+  - `p75_estabilidad`: el umbral de estabilidad para `Mantener` e `Intervenir` (el percentil de `--p-estabilidad`).
+  - `escalar_std`: `true` si el desvío se escaló con el factor de corrección.
+  - `prueba_t`: la prueba usada, `welch` o `student`.
+- `parametros`: los valores con los que se corrió, para poder repetir la corrida.
+  - `correccion`, `alfa`, `min_plantas_grupo`, `p_ambiente`, `p_estabilidad`, `escalar_std` y `prueba_t`: los de las opciones del mismo nombre.
+  - `clima`: solo con `--clima`; trae `ventana_frio`, `formato_fecha`, `cobertura_minima`, `max_hueco_dias`, `campana` y `origenes_estimados`.
+- `estado_frio`: el estado de frío usado.
+  - `origen`: `clima`, `manual` o `ninguno`.
+  - `estado`: `Deficiente`, `Adecuado` u `Óptimo` (`null` si no hay).
+  - Solo con origen `clima`: `periodo` (el año del invierno; con `--ventana-frio temporada`, el año en que empieza la temporada), `horas` (horas de frío), `cobertura` (proporción de días con datos), `hueco_maximo` (la mayor racha de días sin datos), `dias_estimados` (días del período que figuran como estimados) y `proporcion_estimada` (esa cantidad sobre los días con datos). Los dos últimos valen `null` si el clima no trae la columna `origen`.
+
+### `advertencias.json`
+
+Lo escribe `analizar`. Una lista de objetos, en el orden en que se produjeron, cada uno con dos claves: `codigo` (el nombre estable de la advertencia, que se explica en la sección 5) y `mensaje` (el texto para personas). Si no hubo ninguna advertencia, la lista está vacía.
