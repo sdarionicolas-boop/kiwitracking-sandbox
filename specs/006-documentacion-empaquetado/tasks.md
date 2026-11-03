@@ -30,7 +30,7 @@ Lee: `spec.md` (RF-1 a RF-17), `clarificacion.md` y `plan.md`.
 
 ## Guía de uso
 
-- [ ] **T6.5. Guía: instalación, recorrido y opciones.** `docs/uso.md` (secciones 1 y 2).
+- [x] **T6.5. Guía: instalación, recorrido y opciones.** `docs/uso.md` (secciones 1 y 2).
   - Cubre: RF-3, RF-10, RF-2 (parte).
   - Hecho cuando: existen las secciones "Requisitos e instalación" y "Recorrido completo"; cada opción larga de `kvpi`, `mapa` y `analizar` (las del analizador de argumentos, incluidas `--help` y `--depurar`) y la general `--version` figuran en una línea `` - `--opcion` `` con su descripción; las que tienen valor por defecto en el código (firmas de `analizar`, `ParametrosClima` y `ejecutar_kvpi`) terminan en `(por defecto: <valor>)` con el valor que dan esas firmas; los ejemplos están en una línea, con barras comunes y sin rutas del equipo de quien escribió la guía; un test falla si se agrega una opción al analizador sin documentarla o si la guía nombra una que no existe.
 
