@@ -45,7 +45,7 @@ No cambia ningún cálculo ni ningún resultado. Salvo una opción nueva, `--ver
 - **RF-10.** Los ejemplos de comandos de la guía NO DEBEN llevar rutas del equipo de quien escribió la guía; usan rutas relativas y los nombres de archivo de los ejemplos.
 
 **Empaquetado**
-- **RF-11.** `pyproject.toml` DEBE declarar: nombre, versión, descripción (sin la palabra "Sandbox"), `readme`, licencia MIT, autor, `requires-python`, dependencias con versiones mínimas, clasificadores y palabras clave.
+- **RF-11.** `pyproject.toml` DEBE declarar: nombre, versión, descripción (sin la palabra "Sandbox"), `readme`, licencia MIT, autor, `requires-python`, dependencias con versiones mínimas, clasificadores y palabras clave. Las versiones declaradas DEBEN ser las probadas: `requires-python = ">=3.14"` y, como piso de cada dependencia, la versión (hasta el menor) con que se corrió la suite completa: `pandas>=3.0`, `numpy>=2.5`, `scipy>=1.18`, `shapely>=2.2`, `pyproj>=3.8` y `folium>=0.20`. El clasificador de Python es solo 3.14. Un test comprueba que las versiones instaladas cumplen los pisos declarados, para que no puedan quedar por encima de lo probado. Ampliar el rango (Python 3.10 y versiones anteriores) queda para otra spec.
 - **RF-12.** El repositorio DEBE tener el archivo `LICENSE` (MIT, el mismo texto del repositorio original) y el paquete construido DEBE incluirlo.
 - **RF-13.** `python -m build` DEBE generar el `sdist` y el `wheel` sin errores ni avisos. El `wheel` DEBE contener solo el paquete `kiwitracking`, sus metadatos y la licencia (ni tests, ni specs, ni datos de referencia); el `sdist` DEBE incluir exactamente esta lista (declarada en un `MANIFEST.in` como lista de inclusión): `kiwitracking/`, `tests/` (los `.py` y los datos de `tests/golden/`), `docs/uso.md`, `README.md`, `LICENSE` y `pyproject.toml`, más los metadatos que genera la herramienta. NO DEBE contener nada más: ni `specs/`, ni `AGENTS.md`, `CLAUDE.md` o `docs/constitution.md`, ni `mapa.html`, ni `resultados/`, ni archivos `.xls`, ni `.venv`, `dist/` o `build/`. Un test abre el `sdist` construido y compara su contenido con la lista.
 - **RF-14.** Instalar el `wheel` en un entorno virtual limpio DEBE crear el comando `kiwitracking`; `kiwitracking --help`, `python -m kiwitracking --help` y el ejemplo mínimo del README DEBEN funcionar desde una carpeta que no sea la del código.
@@ -83,13 +83,14 @@ No cambia ningún cálculo ni ningún resultado. Salvo una opción nueva, `--ver
 
 ## Dudas abiertas
 - **[NECESITA ACLARACIÓN]** Número de versión: el sandbox está en `0.0.1`; el repositorio original en `1.1.0` (`CITATION.cff`). Falta decidir con cuál sale el paquete.
-- **[NECESITA ACLARACIÓN]** Versiones mínimas de las dependencias: hoy se declaran (`pandas>=2.0`, `numpy>=1.26`…) sin haberlas probado; el código solo se probó con las más recientes (Python 3.14). Conviene declarar lo que se probó, o probar las mínimas.
+- *Resuelta el 02/11/2026 (C4):* se declara solo lo probado (Python 3.14 y las versiones actuales de las dependencias); ampliar el rango queda para otra spec.
 - **[NECESITA ACLARACIÓN]** Construir el paquete necesita `build` y `setuptools`, que hoy no están en el entorno de desarrollo, y descargarlos requiere internet. Un test que construya e instale tardará decenas de segundos y no puede correr sin red; hay que decidir cómo convive con la regla de "sin tests saltados".
 - **[NECESITA ACLARACIÓN]** URL del proyecto en los metadatos: el repositorio del sandbox es privado; una URL que no abre no sirve a quien instale.
 - **[NECESITA ACLARACIÓN]** Cómo citar: el `CITATION.cff` del repositorio original apunta a la tesis; el sandbox no tiene uno.
 - **[NECESITA ACLARACIÓN]** La prueba t por defecto del programa (Welch) difiere de la de la tesis (Student): la guía lo explica y da `--prueba-t student`, pero conviene decidir si el ejemplo de reproducción usa Student para que el valor p coincida con el de la tesis.
 
 ## Historial de cambios
+- **Clarificación (02/11/2026).** Se resolvió C4: se declaran solo las versiones probadas (`requires-python >=3.14` y pisos en las versiones con que se corrió la suite), y un test comprueba que las instaladas los cumplen (RF-11).
 - **Clarificación (02/11/2026).** Se resolvió C3: el `sdist` lleva una lista explícita de inclusión (`MANIFEST.in`) y un test compara su contenido con ella; nada fuera de la lista viaja por omisión (RF-13).
 - **Clarificación (02/11/2026).** Se resolvió C2: el `sdist` lleva los tests y los datos de `tests/golden/` para poder reproducir; el `wheel` no, y la guía lo dice (RF-8, RF-13).
 - **Clarificación (02/11/2026).** Se resolvió C1: la reproducción tiene dos partes rotuladas, "Reproducir lo publicado" (0 y 19, FC 1,2262, Student) y "Lo que agrega el programa" (16 y 19 con el clima de 2024); la guía nunca presenta los 16 "Mantener" como resultado de la tesis (H4, RF-8, criterio 3).
