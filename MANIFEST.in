@@ -1,0 +1,5 @@
+# Lista de inclusión del sdist (spec 006, RF-13): lo que no se nombra acá no viaja.
+include README.md LICENSE CITATION.cff pyproject.toml
+include docs/uso.md
+recursive-include kiwitracking *.py
+recursive-include tests *.py *.csv *.geojson *.txt

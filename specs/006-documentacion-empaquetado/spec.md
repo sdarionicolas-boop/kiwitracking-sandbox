@@ -65,6 +65,7 @@ No cambia ningún cálculo ni ningún resultado. Salvo una opción nueva, `--ver
 - Un código de advertencia nuevo sin documentar: el test de RF-4 falla.
 - Un ejemplo de la guía cuyo resultado cambia: el test de RF-8 falla.
 - El `wheel` se instala en un entorno sin los datos de `tests/golden/`: el comando y el ejemplo mínimo siguen funcionando con archivos que trae el usuario.
+- Un `kiwitracking.egg-info` viejo en la carpeta de trabajo: `setuptools` lee su `SOURCES.txt` y suma esos archivos al `sdist` aunque `MANIFEST.in` no los nombre (se midió: 122 archivos en vez de 85). Antes de construir hay que borrarlo; el test de construcción y `scripts/probar_instalacion.py` lo hacen y la guía lo dice.
 - Un entorno sin acceso a internet: la construcción necesita `setuptools` y `build` (`build` va en las dependencias opcionales `dev`); sin red y sin ellos instalados, ni la construcción ni la prueba de instalación pueden correr.
 
 ## Fuera de alcance
@@ -92,6 +93,7 @@ No cambia ningún cálculo ni ningún resultado. Salvo una opción nueva, `--ver
 - **[NECESITA ACLARACIÓN]** La prueba t por defecto del programa (Welch) difiere de la de la tesis (Student): la guía lo explica y da `--prueba-t student`, pero conviene decidir si el ejemplo de reproducción usa Student para que el valor p coincida con el de la tesis.
 
 ## Historial de cambios
+- **T6.4 (03/11/2026).** Al construir el `sdist` se vio que un `kiwitracking.egg-info` desactualizado hace viajar archivos fuera de la lista de inclusión (122 archivos en vez de 85). Se agregó el caso límite: se borra antes de construir (test y script) y la guía lo explica (RF-13).
 - **T6.0 (02/11/2026).** Al escribir la cita se comprobó en Zenodo que `10.5281/zenodo.19352552` (el DOI del `CITATION.cff` original) redirige al registro `19352553` —título "KiwiTrackingIA: Sistema de análisis…", versión que figura como v1.0.1 y archivo `v1.0.2`—, así que es el DOI del proyecto y no el de la `1.1.0`. Se corrigió RF-11 y RF-17: el DOI se identifica como el del proyecto. El badge del README original usa `…553`; la diferencia con el `CITATION.cff` original (`…552`) queda para que la revise quien administra el registro.
 - **Clarificación (02/11/2026).** Se resolvió C8: `CITATION.cff` propio en el sandbox (versión 1.2.0, autoría sin correo, DOI de Zenodo identificado como el del proyecto), sección "Cómo citar" en el README y un test de coherencia con `pyproject.toml` (RF-1, RF-13, RF-17).
 - **Clarificación (02/11/2026).** Se resolvió C7: el paquete sale como `1.2.0`, continuación de la `1.1.0` del repositorio original, y la guía aclara que no tiene DOI propio (RF-11).

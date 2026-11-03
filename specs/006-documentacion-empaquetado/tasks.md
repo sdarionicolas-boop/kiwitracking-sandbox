@@ -24,7 +24,7 @@ Lee: `spec.md` (RF-1 a RF-17), `clarificacion.md` y `plan.md`.
 
 ## Construcción
 
-- [ ] **T6.4. Construcción y contenido del `wheel` y del `sdist`.** `MANIFEST.in`.
+- [x] **T6.4. Construcción y contenido del `wheel` y del `sdist`.** `MANIFEST.in`.
   - Cubre: RF-13.
   - Hecho cuando: `python -m build --no-isolation` en una carpeta temporal genera `kiwitracking-1.2.0-py3-none-any.whl` y `kiwitracking-1.2.0.tar.gz` sin errores ni avisos; el `wheel` contiene exactamente los módulos de `kiwitracking/`, los metadatos (`METADATA`, `WHEEL`, `entry_points.txt`, `top_level.txt`, `RECORD`) y `LICENSE`, y su punto de entrada es `kiwitracking = kiwitracking.cli:main`; el `sdist` contiene solo la lista de inclusión de la spec (`kiwitracking/`, `tests/` con `tests/golden/`, `docs/uso.md`, `README.md`, `LICENSE`, `CITATION.cff`, `pyproject.toml` y los metadatos que genera la herramienta) y ningún archivo de `specs/`, ni `AGENTS.md`, `CLAUDE.md`, `docs/constitution.md`, `mapa.html`, `resultados/`, `.xls`, `.venv`, `dist/` ni `build/`. (`docs/uso.md` y `README.md` todavía no existen: el test usa archivos mínimos temporales hasta T6.10.)
 
@@ -73,5 +73,6 @@ Lee: `spec.md` (RF-1 a RF-17), `clarificacion.md` y `plan.md`.
 - Orden de dependencia: T6.0 (licencia y cita) → T6.1 (metadatos) → T6.2 (versión) → T6.3 (dependencias) → T6.4 (construcción) → T6.5 a T6.9 (guía) → T6.10 (README) → T6.11 (instalación) → T6.12.
 - T6.1 y T6.2 exigen reinstalar el entorno de desarrollo (`pip install -e .[dev]`), que descarga `build` y `setuptools`: el entorno tiene internet para `pip`.
 - Los tests de la guía se escriben antes que cada sección (la sección no existe, el test falla) y la sección se escribe hasta que pasa.
+- Antes de construir hay que borrar `kiwitracking.egg-info` (el test, el script y la guía de T6.9 lo hacen o lo dicen): un `SOURCES.txt` viejo contamina el `sdist`.
 - Si una tarea obliga a modificar un test existente, se corta y se consulta. Se espera que no haga falta: `--version` solo agrega una opción al analizador general.
 - Las dudas abiertas de la clarificación (C9 a C14) no tienen tarea propia: se resuelven con las decisiones del plan (secciones 4 y 8).
